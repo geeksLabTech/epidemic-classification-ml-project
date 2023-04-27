@@ -30,6 +30,32 @@ active_by_sex = [0.607, 0.393]
 # gender distribution of professors
 prefessors_by_sex = [0.689, 0.310]
 
+#Distribution of persons by economic activity (both sexes)
+# positions in the list represents the following labels:
+# 0 agricultura,ganaderia y silvicultura
+# 1 Explotacion de minas y canteras 
+# 2 Industria azucarera
+# 3 Industria manufacturera
+# 4 Suministro de electricidad, gas y agua
+# 5 Construccion
+# 6 Comercio y reparacion de efectos personales 
+# 7 Hoteles y restaurantes
+# 8 Transporte, almacenamiento y comunicaciones 
+# 9 Intermediacion financiera
+# 10 Servicios empresariales, actividades inmobiliarias y de alquiler
+# 11 Administración pública, defensa, seguridad social
+# 12 Ciencia e innovación tecnológica
+# 13 Educación
+# 14 Salud pública y asistencia social
+# 15 Cultura y deporte
+# 16 Servicios comunales, sociales y personales 
+distribution_by_activity_economic = [x/46437 for x in [8025,263,223,462,3559,953,2644,4868,2706,3262,321,737,2995,300,4817,5133,1599,3550]]
+#Distribution of women by economic activity
+#The positions represent the same as in the previous distribution
+women_distribution_by_activity_economic = [ x/18249 for x in [1385,51,47,96,1090,269,312,1890,1326,637,219,361,1360,148,3321,3640,698,1400]]
+#Distribution of man by economic activity
+#The positions represent the same as in the previous distribution
+man_distribution_by_activity_economic = [1-x for x in women_distribution_by_activity_economic]
 # Population distributions
 
 # positions in the list represents the following ranges:

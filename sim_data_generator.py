@@ -71,7 +71,7 @@ age_groups = [
 ]
 
 data = {
-    "location_name": "",
+    "location_name": "cuba",
     "data_provenance_notices": [],
     "reference_links": [],
     "citations": [],
@@ -120,6 +120,3 @@ data = {
     "workplace_size_counts_by_num_personnel": [
     ]
 }
-
-
-# Define the total population size

@@ -33,14 +33,27 @@ prefessors_by_sex = [0.689, 0.310]
 # Population distributions
 
 # positions in the list represents the following ranges:
-# < 5, 5-9, 10-14, 15-19, 20-24, 25-29, 30-64, 65 >
+# < 5, 5-9, 10-14, 15-19, 20-24, 25-29, 30-34, 35-39,40-44, 45-49, 50-54, 55-59,60-64,65>
 distribution_by_age_groups = [x/total_population for x in [559705,
-                                                           620358, 578617, 639797, 697891, 722594, 5603201, 1759432]]
+                                                           620358,
+                                                           578617,
+                                                           639797,
+                                                           697891,
+                                                           722594,
+                                                           791652,
+                                                           676522,
+                                                           660379,
+                                                           927867,
+                                                           985180,
+                                                           934753,
+                                                           626848,
+                                                           1759432]]
 
 # probability distribution of being a woman or a man
 # the first element represents the probability that they are male
 distribution_of_woman_or_man = [0.486, 0.496]
 
-# level of schooling, the first position represents elementary school or less, the second secondary school,
+# level of study, the first position represents elementary school or less, the second secondary school,
 # the third high school and the last higher education.
-enrollment_distribution = [x/47100 for x in [1952, 9995, 24713, 10440]]
+enrollment_distribution = [x for x in [1952, 9995, 24713, 10440]]
+total_enrollment = 47100

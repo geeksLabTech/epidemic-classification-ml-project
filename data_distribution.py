@@ -1,4 +1,4 @@
-
+import random as random
 
 # work-related distributions
 total_employees = 47100
@@ -83,3 +83,18 @@ distribution_of_woman_or_man = [0.486, 0.496]
 # the third high school and the last higher education.
 enrollment_distribution = [x for x in [1952, 9995, 24713, 10440]]
 total_enrollment = 47100
+
+#number of members per home variable. 
+#Position i represents the number of homes with i+1 members
+total=3721042
+prob_density=[ elem/total for elem in [688205, 956925, 950687,667271, 281969,110739,41575,16434,7237]]
+
+class var_generator:
+    def __init__(self,prob_density):
+        self.prob_density= prob_density
+    def generate(self):
+        x=random.random()
+        current=0
+        for i in range(len(self.prob_density)):
+            current+=prob_density[i]
+            if x < current: return i+1

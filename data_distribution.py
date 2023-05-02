@@ -1,3 +1,5 @@
+import random as random
+
 # work-related distributions
 total_employees = 47100
 total_population = 11181595
@@ -86,3 +88,17 @@ age_groups = [
     [0, 4], [5, 9], [10, 14], [15, 19], [20, 24], [25, 29], [30, 34], [
         35, 39], [40, 44], [45, 49], [50, 54], [55, 59], [60, 64],  [65, 100]
 ]
+#number of members per home variable. 
+#Position i represents the number of homes with i+1 members
+total=3721042
+prob_density=[ elem/total for elem in [688205, 956925, 950687,667271, 281969,110739,41575,16434,7237]]
+
+class var_generator:
+    def __init__(self,prob_density):
+        self.prob_density= prob_density
+    def generate(self):
+        x=random.random()
+        current=0
+        for i in range(len(self.prob_density)):
+            current+=prob_density[i]
+            if x < current: return i+1

@@ -1,5 +1,3 @@
-
-
 # work-related distributions
 total_employees = 47100
 total_population = 11181595
@@ -83,3 +81,8 @@ distribution_of_woman_or_man = [0.486, 0.496]
 # the third high school and the last higher education.
 enrollment_distribution = [x for x in [1952, 9995, 24713, 10440]]
 total_enrollment = 47100
+
+age_groups = [
+    [0, 4], [5, 9], [10, 14], [15, 19], [20, 24], [25, 29], [30, 34], [
+        35, 39], [40, 44], [45, 49], [50, 54], [55, 59], [60, 64],  [65, 100]
+]

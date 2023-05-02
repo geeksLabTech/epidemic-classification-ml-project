@@ -1,4 +1,5 @@
 from data_distribution import prob_density
+import numpy as np
 
 
 class Household:

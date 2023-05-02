@@ -12,7 +12,8 @@ class Person:
             age_groups[self.age_group][0], age_groups[self.age_group][1])]
 
         self.age = np.random.choice(ages, 1)[0]
-        self.sex = np.random.choice(2, 1, p=distribution_of_woman_or_man)[0]
+        self.sex = np.random.choice(2, 1, p=[
+                                    distribution_of_woman_or_man[0], distribution_of_woman_or_man[1]+distribution_of_woman_or_man[2]])[0]
         self.work = self.study = False
 
         # Enrollment and employment

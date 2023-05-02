@@ -1,5 +1,24 @@
 import random as random
 
+provinces_population = {
+    "Pinar del Rio": 583037,
+    "Artemisa": 514332,
+    "La Habana": 2132183,
+    "Mayabeque": 384389,
+    "Matanzas": 716320,
+    "Villa Clara": 775091,
+    "Cienfuegos": 406224,
+    "Sancti Spiritus": 463844,
+    "Ciego de Avila": 435326,
+    "Camaguey": 763389,
+    "Las Tunas": 533224,
+    "Holguin": 1021591,
+    "Granma": 817763,
+    "Santiago de Cuba": 1045631,
+    "Guantanamo": 505606,
+    "Isla de la Juventud": 83625
+}
+
 # work-related distributions
 total_employees = 47100
 total_population = 11181595
@@ -80,7 +99,7 @@ distribution_by_age_groups = [x/total_population for x in [559705,
 
 # probability distribution of being a woman or a man
 # the first element represents the probability that they are male
-distribution_of_woman_or_man = [0.486, 0.496]
+distribution_of_woman_or_man = [0.486, 0.496, 1-(0.496+0.486)]
 
 # level of study, the first position represents elementary school or less, the second secondary school,
 # the third high school and the last higher education.

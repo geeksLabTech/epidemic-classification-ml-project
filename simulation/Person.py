@@ -33,4 +33,9 @@ class Person:
         if self.age > 15 and self.age < 75:
             self.work = True
 
-        
+            if self.sex == 0:
+                act = man_distribution_by_activity_economic
+            else:
+                act = women_distribution_by_activity_economic
+
+            self.economic_activity = np.random.choice(16, 1, act)

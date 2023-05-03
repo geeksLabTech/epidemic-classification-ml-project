@@ -16,20 +16,22 @@ class Person:
                                     distribution_of_woman_or_man[0], distribution_of_woman_or_man[1]+distribution_of_woman_or_man[2]])[0]
         self.work = self.study = False
 
+        if self.age > 6 and self.age < 13:
+            self.study = 'primary'
         # Enrollment and employment
-        if self.age <= 15:
-            self.study = True
+        elif self.age <= 15:
+            self.study = 'secondary`'
         # pre-universitary is assigned according to the distribution
-        if self.age > 15 and self.age < 18:
+        elif self.age > 15 and self.age < 18:
             if random.random() < enrollment_distribution[2]/total_population:
-                self.study = True
+                self.study = 'pre_univ'
         # for university, in case of a person being over 30 years the probability is gradually reduced
-        if self.age > 18:
+        elif self.age > 18:
             population_coef = total_population
             if self.age > 30:
                 population_coef *= self.age/10
             if random.random() < enrollment_distribution[3]/population_coef:
-                self.study = True
+                self.study = 'university'
 
         if self.age > 15 and self.age < 75:
             self.work = True

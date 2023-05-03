@@ -49,6 +49,11 @@ active_by_sex = [0.607, 0.393]
 # gender distribution of professors
 prefessors_by_sex = [0.689, 0.310]
 
+primary_schools_per_thousand_people = 6925 / (total_population/1000)
+secondary_schools_per_thousand_people = 1688 / (total_population/1000)
+pre_universitary_schools_per_thousand_people = 286 / (total_population / 1000)
+universities_per_province = 14 / 15
+
 # Distribution of persons by economic activity (both sexes)
 # positions in the list represents the following labels:
 # 0 agricultura,ganaderia y silvicultura
@@ -114,6 +119,10 @@ age_groups = [
 # Position i represents the number of homes with i+1 members
 total_houses = 3721042
 urban_rural = [2894708, 890488]
+
+# to be checked
+neighborhoods_per_thousand_people = 1.0
+
 prob_density = [elem/total_houses for elem in [688205, 956925,
                                                950687, 667271, 281969, 110739, 41575, 16434, 7237]]
 

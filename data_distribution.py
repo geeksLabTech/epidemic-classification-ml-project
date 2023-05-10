@@ -47,7 +47,7 @@ active_man_in_working_age = [0.768, 0.232]
 active_by_sex = [0.607, 0.393]
 
 # gender distribution of professors
-prefessors_by_sex = [0.689, 0.310]
+professors_by_sex = [0.689, 0.310]
 
 primary_schools_per_thousand_people = 6925 / (total_population/1000)
 secondary_schools_per_thousand_people = 1688 / (total_population/1000)

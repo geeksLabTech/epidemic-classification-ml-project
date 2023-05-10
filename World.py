@@ -3,6 +3,7 @@ from simulation.Household import Household
 from simulation.School import School
 # from data_distribution import *
 
+import pickle
 import numpy as np
 from multiprocessing import Pool
 
@@ -24,28 +25,25 @@ class World:
 
     """
 
-    def __init__(self, data_source: DataLoader, n_threads: int = 12):
+    def __init__(self, data_source: DataLoader, n_threads: int = 1):
         """initialization function, crteates world concurrently
 
         Args:
             data_source (DataLoader): Instance of DataLoader with demographic data
-            n_threads (int): number of concurrent threads (default: 12)
+            n_threads (int): number of concurrent threads (default: 1)
         """
 
         # dictionaries to easy access neighborhoods and schools
-        self.neighborhoods = {}
-        self.schools = {}
         self.data_source = data_source
 
         for i in data_source.provinces_population:
             self.generate_neighborhoods(i)
         # multi threaded process to speed up population generation
+        # 16GB RAM dies with 2 threads... use under own responsability
         # with Pool(n_threads) as p:
         #     results = []
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
-
-        print(self.neighborhoods)
 
     def generate_neighborhoods(self, province: str, verbose=3):
         """generate neigborhoods for a given province
@@ -57,6 +55,9 @@ class World:
             verbose (int):
                 integer denoting log level, for debug proposes (default: 0)
         """
+
+        neighborhoods = {}
+        schools = {}
 
         # according to distribution, the province population is divided by
         # the number of people per neighborhood
@@ -70,10 +71,10 @@ class World:
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
         # all hosueholds inside a neighborhood
-        self.neighborhoods[province] = []
+        neighborhoods[province] = []
 
         # schools in province are organized according to school type
-        self.schools[province] = {
+        schools[province] = {
             'primary': [],
             'secondary': [],
             'pre_univ': [],
@@ -97,7 +98,7 @@ class World:
         for sc_tp in num_of_schools.keys():
             for _ in range(int(num_of_schools[sc_tp])):
                 school = School(province, sc_tp)
-                self.schools[province][school.school_type].append(school)
+                schools[province][school.school_type].append(school)
 
         # the neighborhoods are created
         for j in range(total_neighborhoods):
@@ -127,13 +128,17 @@ class World:
                         # given that schools are not located in neighborhoods
                         if p.study:
                             sc = np.random.choice(
-                                len(self.schools[province][p.study_details]), 1)[0]
-                            self.schools[province][p.study_details][sc].students.append(
+                                len(schools[province][p.study_details]), 1)[0]
+                            schools[province][p.study_details][sc].students.append(
                                 p)
 
                         h.persons.append(p)
                 neighborhood.append(h)
-            self.neighborhoods[province].append(neighborhood)
+            neighborhoods[province].append(neighborhood)
+
+        # with open(f"population_data/{province}.pickle", "wb") as f:
+        #     pickle.dump(
+        #         {"neighborhoods": neighborhoods, "schools": schools}, f)
 
         if verbose >= 2:
             print("Finished:", province)

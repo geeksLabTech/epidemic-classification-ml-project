@@ -45,8 +45,7 @@ class Person:
 
         # sex is also selected using the probabilities in data_distribution
         self.sex = bool(np.random.choice(
-            2, 1, p=data_source.distribution_of_man_or_woman))[0]
-
+            2, 1, p=data_source.distribution_of_man_or_woman)[0])
         # initially work and study are false
         # for people with 15 or less years
         # it is mandatory to go to corresponding school
@@ -92,6 +91,6 @@ class Person:
                 if not self.sex:
                     act = data_source.man_distribution_by_economic_activity
                 else:
-                    act = data_source.women_distribution_by_economic_activity
+                    act = data_source.woman_distribution_by_economic_activity
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)

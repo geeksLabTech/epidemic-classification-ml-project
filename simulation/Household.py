@@ -1,5 +1,6 @@
-from data_distribution import prob_density
+# from data_distribution import prob_density
 import numpy as np
+from data_loader import DataLoader
 
 
 class Household:
@@ -16,9 +17,10 @@ class Household:
         a string with the province name
     neighborhood (int):
         an int with the neighborhood number, to identify locality
+
     """
 
-    def __init__(self, province: str, neighborhood: int):
+    def __init__(self, province: str, neighborhood: int, data_source: DataLoader):
         """
 
         Args:
@@ -29,7 +31,8 @@ class Household:
         # according to household size probability in data_distribution
         # a number of inhabitants is generated
         # min val: 1, max val: 9
-        self.number_of_persons = np.random.choice(9, 1, p=prob_density)[0]+1
+        self.number_of_persons = np.random.choice(
+            9, 1, p=data_source.inhabitants_distribution)[0]+1
 
         # initially persons list is empty, on World creation, the inhabitants will be added
         self.persons = []

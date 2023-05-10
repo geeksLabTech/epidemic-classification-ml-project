@@ -104,11 +104,11 @@ distribution_by_age_groups = [x/total_population for x in [559705,
 
 # probability distribution of being a woman or a man
 # the first element represents the probability that they are male
-distribution_of_woman_or_man = [0.486, 0.496, 1-(0.496+0.486)]
+distribution_of_man_or_woman = [0.486, 0.496, 1-(0.496+0.486)]
 
 # level of study, the first position represents elementary school or less, the second secondary school,
 # the third high school and the last higher education.
-enrollment_distribution = [x for x in [1952, 9995, 24713, 10440]]
+enrollment_distribution = [1952, 9995, 24713, 10440]
 total_enrollment = 47100
 
 age_groups = [

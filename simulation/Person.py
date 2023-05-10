@@ -1,5 +1,5 @@
 import numpy as np
-from data_distribution import *
+from data_loader import DataLoader
 
 
 class Person:
@@ -14,7 +14,7 @@ class Person:
         sex (bool):
             bool representing sex (False: male, True: female)
         work (bool):
-            bool representing if the person works or not 
+            bool representing if the person works or not
         study (bool):
             bool representing if a person studies or not
         study_details (str):
@@ -23,25 +23,29 @@ class Person:
             integer representing one of the 16 economic activities in distribution
     """
 
-    def __init__(self):
+    def __init__(self, data_source: DataLoader):
         """Person generation takes all demographic data to fill needed fields
+            Attributes:
+            ----------
+            data_source (DataLoader):
+                DataLoader instance that has all the data required and formatted
         """
 
         # age_group is assigned according to the distibution
         self.age_group = np.random.choice(
-            14, 1, p=distribution_by_age_groups)[0]
+            14, 1, p=data_source.distribution_by_age_groups)[0]
 
         # once the age group is selected, an uniform distribution is assumed
         # for all ages within the age range on the age group
         # age is then selected
         ages = [i for i in range(
-            age_groups[self.age_group][0], age_groups[self.age_group][1])]
+            data_source.age_groups[self.age_group][0], data_source.age_groups[self.age_group][1])]
         self.age = np.random.choice(ages, 1)[0]
         del ages
 
         # sex is also selected using the probabilities in data_distribution
-        self.sex = bool(np.random.choice(2, 1, p=[
-            distribution_of_woman_or_man[0], distribution_of_woman_or_man[1]+distribution_of_woman_or_man[2]])[0])
+        self.sex = bool(np.random.choice(
+            2, 1, p=data_source.distribution_of_man_or_woman))[0]
 
         # initially work and study are false
         # for people with 15 or less years
@@ -56,17 +60,17 @@ class Person:
 
         # pre-universitary is assigned according to the distribution
         elif self.age > 15 and self.age < 18:
-            if random.random() < enrollment_distribution[2]/total_population:
+            if np.random.random() < data_source.enrollment_distribution[2]/data_source.total_population:
                 self.study_details = 'pre_univ'
                 self.study = True
 
         # for university, in case of a person being over 30 years
         # the probability of studying is gradually reduced
         elif self.age > 18:
-            population_coef = total_population
+            population_coef = data_source.total_population
             if self.age > 30:
                 population_coef *= self.age/10
-            if random.random() < enrollment_distribution[3]/population_coef:
+            if np.random.random() < data_source.enrollment_distribution[3]/population_coef:
                 self.study_details = 'university'
                 self.study = True
 
@@ -75,17 +79,19 @@ class Person:
         # is an active worker
         if self.age > 15 and self.age < 75:
             if self.sex:
-                active = np.random.choice(2, 1, p=active_woman_in_working_age)
+                active = np.random.choice(
+                    2, 1, p=data_source.active_woman_in_working_age)
             else:
-                active = np.random.choice(2, 1, p=active_man_in_working_age)
+                active = np.random.choice(
+                    2, 1, p=data_source.active_man_in_working_age)
 
             if active:
                 self.work = True
 
                 # select corresponding distribution given sex
                 if not self.sex:
-                    act = man_distribution_by_activity_economic
+                    act = data_source.man_distribution_by_economic_activity
                 else:
-                    act = women_distribution_by_activity_economic
+                    act = data_source.women_distribution_by_economic_activity
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)

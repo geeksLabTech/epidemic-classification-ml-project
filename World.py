@@ -88,7 +88,7 @@ def generate_neighborhoods(province, verbose=0):
                     p = Person()
 
                     # a household should have at least one person older than 18
-                    # TODO: re imp
+                    # TODO: re implement this
                     if p.age > 18:
                         has_elder = True
 

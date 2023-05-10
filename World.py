@@ -37,17 +37,17 @@ class World:
         self.schools = {}
         self.data_source = data_source
 
-        # for i in data_source.provinces_population:
-        #     self.generate_neighborhoods(i)
+        for i in data_source.provinces_population:
+            self.generate_neighborhoods(i)
         # multi threaded process to speed up population generation
-        with Pool(n_threads) as p:
-            results = []
-            results.append(p.map(self.generate_neighborhoods,
-                                 data_source.provinces_population))
+        # with Pool(n_threads) as p:
+        #     results = []
+        #     results.append(p.map(self.generate_neighborhoods,
+        #                          (data_source.provinces_population), 3))
 
         print(self.neighborhoods)
 
-    def generate_neighborhoods(self, province: str, verbose=0):
+    def generate_neighborhoods(self, province: str, verbose=3):
         """generate neigborhoods for a given province
 
         Args:
@@ -128,7 +128,7 @@ class World:
                         if p.study:
                             sc = np.random.choice(
                                 len(self.schools[province][p.study_details]), 1)[0]
-                            self.schools[province][p.study][sc].students.append(
+                            self.schools[province][p.study_details][sc].students.append(
                                 p)
 
                         h.persons.append(p)

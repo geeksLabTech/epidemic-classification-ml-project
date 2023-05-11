@@ -1,6 +1,7 @@
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
+from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 
 import pickle
@@ -22,7 +23,8 @@ class World:
             'type1' : [schools]
             ...
         }
-
+    workplaces (dict):
+        dictionary containing a list of workplaces per province
     """
 
     def __init__(self, data_source: DataLoader, n_threads: int = 1):
@@ -58,7 +60,7 @@ class World:
 
         neighborhoods = {}
         schools = {}
-
+        workplaces: dict[str, list[Workplace]] = {}
         # according to distribution, the province population is divided by
         # the number of people per neighborhood
         # resulting on the number of neighborhoods in the province
@@ -135,6 +137,24 @@ class World:
                         h.persons.append(p)
                 neighborhood.append(h)
             neighborhoods[province].append(neighborhood)
+
+        # Find a way to calculate this value
+        workplaces_by_province = 0.8
+
+        # test this code later
+        # workplaces[province] = []
+        # total_workers = 0
+        # id = 0
+        # while total_workers < self.data_source.provinces_population[province] * workplaces_by_province:
+        #     temp = np.random.choice([0,1,2,3])
+        #     match temp:
+        #         case 0: size = WorkplaceSize.SMALL
+        #         case 1: size = WorkplaceSize.MEDIUM
+        #         case 2: size = WorkplaceSize.LARGE
+        #         case 3: size = WorkplaceSize.EXTRA_LARGE
+        #     wp = Workplace(id, province, size)
+        #     total_workers += wp.number_of_people
+        #     workplaces[province].append(wp)
 
         # with open(f"population_data/{province}.pickle", "wb") as f:
         #     pickle.dump(

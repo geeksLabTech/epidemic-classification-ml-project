@@ -1,7 +1,7 @@
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
-from simulation.workplace import Workplace, WorkplaceSize
+# from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 
 import pickle
@@ -64,7 +64,7 @@ class World:
 
         neighborhoods = {}
         schools = {}
-        workplaces: dict[str, list[Workplace]] = {}
+        # workplaces: dict[str, list[Workplace]] = {}
         # according to distribution, the province population is divided by
         # the number of people per neighborhood
         # resulting on the number of neighborhoods in the province
@@ -101,10 +101,11 @@ class World:
 
         # for each type of school's number of schools
         # a school is created and stored
-        for sc_tp in num_of_schools.keys():
-            for _ in range(int(num_of_schools[sc_tp])):
-                school = School(province, sc_tp)
-                schools[province][school.school_type].append(school)
+        # for sc_tp in num_of_schools.keys():
+        #     for _ in range(int(num_of_schools[sc_tp])):
+        #         school = School(province, sc_tp)
+        #         self.db.insert_data("School", school.serialize())
+        #         del school
 
         # the neighborhoods are created
         for j in range(total_neighborhoods):
@@ -136,11 +137,11 @@ class World:
                         # if the person is a student, gets assigned to a school
                         # the distribution is assumed uniform to get assigned to a school
                         # given that schools are not located in neighborhoods
-                        if p.study:
-                            sc = np.random.choice(
-                                len(schools[province][p.study_details]), 1)[0]
-                            schools[province][p.study_details][sc].students.append(
-                                p.id)
+                        # if p.study:
+                        #     sc = np.random.choice(
+                        #         len(schools[province][p.study_details]), 1)[0]
+                        #     schools[province][p.study_details][sc].students.append(
+                        #         p.id)
 
                         h.persons.append(p.id)
                         self.db.insert_data("Person", p.serialize())

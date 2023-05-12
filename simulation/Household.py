@@ -3,6 +3,9 @@ import numpy as np
 from data_loader import DataLoader
 
 
+import json
+
+
 class Household:
     """Class that represents a Household in the world
 
@@ -11,8 +14,8 @@ class Household:
     number_of_persons (int):
         an int between 1 and 9, randomly generated on instanciation, represents the number of
         people in the house
-    persons (list[Person]):
-        a list containing the instances of Person for the house inhabitants
+    persons (list[int]):
+        a list containing the IDs of the Person instances for the house inhabitants
     province (str):
         a string with the province name
     neighborhood (int):
@@ -20,12 +23,13 @@ class Household:
 
     """
 
-    def __init__(self, province: str, neighborhood: int, data_source: DataLoader):
+    def __init__(self, province: str, neighborhood: int, h_id: int, data_source: DataLoader):
         """
 
         Args:
             province (str): province name
             neighborhood (int): neighborhood ID
+            h_id (int): unique identifier for house in given province
         """
 
         # according to household size probability in data_distribution
@@ -36,6 +40,44 @@ class Household:
 
         # initially persons list is empty, on World creation, the inhabitants will be added
         self.persons = []
-
+        self.house_id = h_id
         self.province = province
         self.neighborhood = neighborhood
+
+    def add_person(self, person_id: int):
+        """Add a Person instance to the household
+
+        Args:
+            person_id (int): ID of the Person instance to add to the household
+        """
+        self.persons.append(person_id)
+
+    def serialize(self):
+        """Serialize the Household instance
+        """
+
+        return {
+            'number_of_persons': int(self.number_of_persons),
+            'persons': self.persons,
+            'province': self.province,
+            'neighborhood': int(self.neighborhood),
+            'house_id': int(self.house_id)
+        }
+
+    @classmethod
+    def load_serialized(cls, data, data_source: DataLoader):
+        """Load a serialized Household instance
+
+        Args:
+            filename (str): name of the file containing the serialized data
+            data_source (DataLoader): instance of DataLoader class to use for loading Person instances
+
+        Returns:
+            Household: deserialized Household instance
+        """
+
+        household = cls(
+            data['province'], data['neighborhood'], data['house_id'], data_source)
+        household.number_of_persons = data['number_of_persons']
+        household.persons = data['persons']
+        return household

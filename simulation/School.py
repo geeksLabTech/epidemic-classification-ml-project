@@ -1,3 +1,7 @@
+from typing import Dict, Any, List
+from simulation import Person
+
+
 class School:
     """Class that represents Schools
 
@@ -20,3 +24,19 @@ class School:
         self.province = province
         self.school_type = school_type
         self.students = []
+
+    def serialize(self) -> str:
+        data = {
+            "province": self.province,
+            "school_type": self.school_type,
+            "students": self.students
+        }
+        return data
+
+    @classmethod
+    def load_serialized(cls, data: Dict[str, Any]) -> "School":
+        province = data["province"]
+        school_type = data["school_type"]
+        school = cls(province, school_type)
+        school.students = data['students']
+        return school

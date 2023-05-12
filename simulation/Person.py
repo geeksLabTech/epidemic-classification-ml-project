@@ -7,6 +7,8 @@ class Person:
 
         Attributes:
         -----------
+        id (str):
+            unique identifier for the Person instance
         age_group (int):
             one of the 14 age groups (< 5, 5-9, 10-14, 15-19, 20-24, 25-29, 30-34, 35-39,40-44, 45-49, 50-54, 55-59,60-64,65>)
         age (int):
@@ -17,20 +19,25 @@ class Person:
             bool representing if the person works or not
         study (bool):
             bool representing if a person studies or not
-        study_details (str):
-            string denoting school_type, it is assigned acording to age
-        economic_activity (int):
-            integer representing one of the 16 economic activities in distribution
+        study_details_id (str):
+            unique identifier of the referenced StudyDetails instance
+        economic_activity_id (str):
+            unique identifier of the referenced EconomicActivity instance
     """
 
-    def __init__(self, data_source: DataLoader):
+    def __init__(self, data_source: DataLoader, id: str):
         """Person generation takes all demographic data to fill needed fields
             Attributes:
             ----------
             data_source (DataLoader):
                 DataLoader instance that has all the data required and formatted
+            id (str):
+                unique identifier for the Person instance
         """
 
+        self.id = id
+
+        # age_group is assigned according to the distibution
         # age_group is assigned according to the distibution
         self.age_group = np.random.choice(
             14, 1, p=data_source.distribution_by_age_groups)[0]
@@ -93,4 +100,33 @@ class Person:
                 else:
                     act = data_source.woman_distribution_by_economic_activity
                 # economic activity is selected
-                self.economic_activity = np.random.choice(16, 1, act)
+                self.economic_activity = np.random.choice(16, 1, act)[0]
+
+    def serialize(self):
+        serialized = {
+            "id": int(self.id),
+            "age_group": int(self.age_group),
+            "age": int(self.age),
+            "sex": self.sex,
+            "work": self.work,
+            "study": self.study,
+        }
+        if self.study:
+            serialized["study_details"] = self.study_details
+        if self.work:
+            serialized["economic_activity"] = int(self.economic_activity)
+        # print(serialized)
+        return serialized
+
+    @staticmethod
+    def load_serialized(serialized, data_source):
+        person = Person(data_source, -1)
+        person.id = serialized["id"]
+        person.age_group = serialized["age_group"]
+        person.age = serialized["age"]
+        person.sex = serialized["sex"]
+        person.work = serialized["work"]
+        person.study = serialized["study"]
+        person.study_details = serialized["study_details"]
+        person.economic_activity = serialized["economic_activity"]
+        return person

@@ -8,6 +8,7 @@ import numpy as np
 from multiprocessing import Pool
 
 from data_loader import DataLoader
+from database.mongodb_client import MongoCRUD
 
 
 class World:
@@ -25,7 +26,7 @@ class World:
 
     """
 
-    def __init__(self, data_source: DataLoader, n_threads: int = 1):
+    def __init__(self, data_source: DataLoader, n_threads: int = 12):
         """initialization function, crteates world concurrently
 
         Args:
@@ -35,7 +36,10 @@ class World:
 
         # dictionaries to easy access neighborhoods and schools
         self.data_source = data_source
-
+        self.person_id = 1
+        self.house_id = 1
+        self.neighborhood_id = 1
+        self.db = MongoCRUD('contact_simulation')
         for i in data_source.provinces_population:
             self.generate_neighborhoods(i)
         # multi threaded process to speed up population generation
@@ -102,22 +106,26 @@ class World:
 
         # the neighborhoods are created
         for j in range(total_neighborhoods):
+            print(j, '/', total_neighborhoods)
             cont = 0
             neighborhood = []
-
             # cont denotes the number of persons in the current neighborhood
             # while its less than the number of persons per neghborhood
             while cont < self.data_source.neighborhoods_per_thousand_people * 1000:
+                # print(
+                #     cont, "/", self.data_source.neighborhoods_per_thousand_people * 1000)
                 # a household is created
-                h = Household(province, j, self.data_source)
+                h = Household(province, j, self.house_id, self.data_source)
+                self.house_id += 1
                 cont += h.number_of_persons
                 has_elder = False
                 # all persons in the household get created
                 while not has_elder:
                     for _ in range(h.number_of_persons):
 
-                        p = Person(data_source=self.data_source)
-
+                        p = Person(data_source=self.data_source,
+                                   id=self.person_id)
+                        self.person_id += 1
                         # a household should have at least one person older than 18
                         # TODO: re implement this
                         if p.age > 18:
@@ -130,11 +138,20 @@ class World:
                             sc = np.random.choice(
                                 len(schools[province][p.study_details]), 1)[0]
                             schools[province][p.study_details][sc].students.append(
-                                p)
+                                p.id)
 
-                        h.persons.append(p)
-                neighborhood.append(h)
-            neighborhoods[province].append(neighborhood)
+                        h.persons.append(p.id)
+                        self.db.insert_data("Person", p.serialize())
+                        del p
+                neighborhood.append(h.serialize())
+                del h
+            self.db.insert_data(
+                "Neighborhood", {str(self.neighborhood_id): neighborhood})
+            del neighborhood
+            neighborhoods[province].append(self.neighborhood_id)
+            self.neighborhood_id += 1
+
+        self.db.insert_data("Province", {province: neighborhoods[province]})
 
         # with open(f"population_data/{province}.pickle", "wb") as f:
         #     pickle.dump(

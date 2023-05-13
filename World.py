@@ -42,14 +42,14 @@ class World:
         self.house_id = 1
         self.neighborhood_id = 1
         self.db = MongoCRUD('contact_simulation')
-        for i in data_source.provinces_population:
-            self.generate_neighborhoods(i)
+        # for i in data_source.provinces_population:
+        #     self.generate_neighborhoods(i)
         # multi threaded process to speed up population generation
         # 16GB RAM dies with 2 threads... use under own responsability
-        # with Pool(n_threads) as p:
-        #     results = []
-        #     results.append(p.map(self.generate_neighborhoods,
-        #                          (data_source.provinces_population), 3))
+        with Pool(n_threads) as p:
+            results = []
+            results.append(p.map(self.generate_neighborhoods,
+                                 (data_source.provinces_population), 3))
 
     def generate_neighborhoods(self, province: str, verbose=3):
         """generate neigborhoods for a given province
@@ -126,9 +126,7 @@ class World:
                 while not has_elder:
                     for _ in range(h.number_of_persons):
 
-                        p = Person(data_source=self.data_source,
-                                   id=self.person_id)
-                        self.person_id += 1
+                        p = Person(data_source=self.data_source)
                         # a household should have at least one person older than 18
                         # TODO: re implement this
                         if p.age > 18:
@@ -143,16 +141,17 @@ class World:
                         #     schools[province][p.study_details][sc].students.append(
                         #         p.id)
 
-                        h.persons.append(p.id)
-                        self.db.insert_data("Person", p.serialize())
+                        id = self.db.insert_data(
+                            "Person", p.serialize()).inserted_id
+                        h.persons.append(id)
                         del p
                 neighborhood.append(h.serialize())
                 del h
-            self.db.insert_data(
-                "Neighborhood", {str(self.neighborhood_id): neighborhood})
+            n_id = self.db.insert_data(
+                "Neighborhood", {"neighborhood": neighborhood}).inserted_id
             del neighborhood
-            neighborhoods[province].append(self.neighborhood_id)
-            self.neighborhood_id += 1
+            neighborhoods[province].append(n_id)
+            # self.neighborhood_id += 1
 
         self.db.insert_data("Province", {province: neighborhoods[province]})
 

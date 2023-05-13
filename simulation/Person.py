@@ -25,7 +25,7 @@ class Person:
             unique identifier of the referenced EconomicActivity instance
     """
 
-    def __init__(self, data_source: DataLoader, id: str):
+    def __init__(self, data_source: DataLoader):
         """Person generation takes all demographic data to fill needed fields
             Attributes:
             ----------
@@ -104,7 +104,6 @@ class Person:
 
     def serialize(self):
         serialized = {
-            "id": int(self.id),
             "age_group": int(self.age_group),
             "age": int(self.age),
             "sex": self.sex,
@@ -120,8 +119,7 @@ class Person:
 
     @staticmethod
     def load_serialized(serialized, data_source):
-        person = Person(data_source, -1)
-        person.id = serialized["id"]
+        person = Person(data_source)
         person.age_group = serialized["age_group"]
         person.age = serialized["age"]
         person.sex = serialized["sex"]

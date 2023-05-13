@@ -73,16 +73,19 @@ universities_per_province = 14 / 15
 # 14 Salud pública y asistencia social
 # 15 Cultura y deporte
 # 16 Servicios comunales, sociales y personales
-distribution_by_activity_economic = [x/46437 for x in [8025, 263, 223, 462, 3559,
-                                                       953, 2644, 4868, 2706, 3262, 321, 737, 2995, 300, 4817, 5133, 1599, 3550]]
+
+distribution_by_activity_economic = [x/46437 for x in [8025, 263, 223, 482, 3559,953, 2644, 4868, 2706, 3262, 321, 737, 2995, 300, 4817, 5133, 1599, 3550]]
+
 # Distribution of women by economic activity
 # The positions represent the same as in the previous distribution
-women_distribution_by_activity_economic = [
-    x/18249 for x in [1385, 51, 47, 96, 1090, 269, 312, 1890, 1326, 637, 219, 361, 1360, 148, 3321, 3640, 698, 1400]]
+women_distribution_by_activity_economic = [ x/18250 for x in [1385, 51, 47, 96, 1090, 269, 312, 1890, 1326, 637, 219, 361, 1360, 148, 3321, 3640, 698, 1400]]
+
 # Distribution of man by economic activity
 # The positions represent the same as in the previous distribution
-man_distribution_by_activity_economic = [
-    1-x for x in women_distribution_by_activity_economic]
+total_men_employees = 46437-18250
+men_distribution_by_economic_activity =[x/total_men_employees for x in [6640, 212, 176, 386, 2469, 684, 2332, 2978, 1380, 2625, 102, 376, 1635, 152, 1496, 1493, 901, 2150]]
+
+
 # Population distributions
 
 # positions in the list represents the following ranges:
@@ -137,4 +140,4 @@ class var_generator:
         for i in range(len(self.prob_density)):
             current += prob_density[i]
             if x < current:
-                return i+1
+                return i+1  

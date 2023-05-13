@@ -12,16 +12,21 @@ class MongoCRUD:
         collection = db[collection_name]
 
         if not type(data) == type([]):
-            data = [data]
-        # Insert data into the collection
-        result = collection.insert_many(data)
+            result = collection.insert_one(data)
+            client.close()
+            return result
 
-        # Print the result
-        # print(
-        #     f"Inserted {len(result.inserted_ids)} documents into '{self.database_name}.{collection_name}' collection.")
+        else:
+            # Insert data into the collection
+            result = collection.insert_many(data)
 
-        # Close the connection
-        client.close()
+            # Print the result
+            # print(
+            #     f"Inserted {len(result.inserted_ids)} documents into '{self.database_name}.{collection_name}' collection.")
+
+            # Close the connection
+            client.close()
+            return result
 
     def get_data(self, collection_name, filter_query={}, projection_fields=None):
         """

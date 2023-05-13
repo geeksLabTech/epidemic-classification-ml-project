@@ -25,7 +25,7 @@ class Person:
             unique identifier of the referenced EconomicActivity instance
     """
 
-    def __init__(self, data_source: DataLoader):
+    def __init__(self, data_source: DataLoader, is_adult_required: bool = False):
         """Person generation takes all demographic data to fill needed fields
             Attributes:
             ----------
@@ -39,17 +39,23 @@ class Person:
 
         # age_group is assigned according to the distibution
         # age_group is assigned according to the distibution
-        self.age_group = np.random.choice(
-            14, 1, p=data_source.distribution_by_age_groups)[0]
+        if is_adult_required:
+            adult_groups_idx = np.arange(start=4, stop=len(data_source.age_groups))
+            adult_groups_distribution = data_source.distribution_by_age_groups[4:]
+            # self.age_group = np.random.choice(a=adult_groups_idx, p=adult_groups_distribution, size=1)
+            self.age_group = np.random.choice(a=adult_groups_idx, size=1)[0]
+        else:
+            self.age_group = np.random.choice(
+                a=14, size=1, p=data_source.distribution_by_age_groups)[0]
 
         # once the age group is selected, an uniform distribution is assumed
         # for all ages within the age range on the age group
         # age is then selected
-        ages = [i for i in range(
-            data_source.age_groups[self.age_group][0], data_source.age_groups[self.age_group][1])]
-        self.age = np.random.choice(ages, 1)[0]
-        del ages
-
+        # print('group', self.age_group)
+        start_age, stop_age = data_source.age_groups[self.age_group]
+        possible_ages = np.arange(start=start_age, stop=stop_age, step=1)
+        self.age = np.random.choice(a=possible_ages, size=1)
+        
         # sex is also selected using the probabilities in data_distribution
         self.sex = bool(np.random.choice(
             2, 1, p=data_source.distribution_of_man_or_woman)[0])

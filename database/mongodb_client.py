@@ -4,29 +4,18 @@ from pymongo import MongoClient
 class MongoCRUD:
     def __init__(self, database_name):
         self.database_name = database_name
+        self.client = MongoClient()
+        self.db = self.client[database_name]
 
-    def insert_data(self, collection_name, data):
-        # Connect to the database
-        client = MongoClient()
-        db = client[self.database_name]
-        collection = db[collection_name]
-
-        if not type(data) == type([]):
-            result = collection.insert_one(data)
-            client.close()
-            return result
-
-        else:
-            # Insert data into the collection
-            result = collection.insert_many(data)
-
-            # Print the result
-            # print(
-            #     f"Inserted {len(result.inserted_ids)} documents into '{self.database_name}.{collection_name}' collection.")
-
-            # Close the connection
-            client.close()
-            return result
+    def insert_one(self, collection_name, data):
+        collection = self.db[collection_name]
+        result = collection.insert_one(data)
+        return result
+        
+    def insert_many(self, collection_name, data):
+        collection = self.db[collection_name]
+        result = collection.insert_many(data)
+        return result
 
     def get_data(self, collection_name, filter_query={}, projection_fields=None):
         """
@@ -44,16 +33,9 @@ class MongoCRUD:
         A list of matching documents from the specified collection.
         """
         # Connect to MongoDB server
-        client = MongoClient()
-        database = client[self.database_name]
-        collection = database[collection_name]
+        collection = self.db[collection_name]
 
         # Retrieve documents based on filter query and projection fields
-        documents = []
         for doc in collection.find(filter_query, projection_fields):
-            documents.append(doc)
+            yield doc
 
-        # Close database connection
-        client.close()
-
-        return documents

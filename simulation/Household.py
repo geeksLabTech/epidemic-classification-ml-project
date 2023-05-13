@@ -1,7 +1,7 @@
 # from data_distribution import prob_density
 import numpy as np
 from data_loader import DataLoader
-
+from .Person import Person
 
 import json
 
@@ -23,7 +23,7 @@ class Household:
 
     """
 
-    def __init__(self, province: str, neighborhood: int, h_id: int, data_source: DataLoader):
+    def __init__(self, province: str, neighborhood: int, h_id: int, data_source: DataLoader, persons_id):
         """
 
         Args:
@@ -39,10 +39,12 @@ class Household:
             9, 1, p=data_source.inhabitants_distribution)[0]+1
 
         # initially persons list is empty, on World creation, the inhabitants will be added
-        self.persons = []
+        self.persons_id = persons_id
         self.house_id = h_id
         self.province = province
         self.neighborhood = neighborhood
+
+    
 
     def add_person(self, person_id: int):
         """Add a Person instance to the household
@@ -50,7 +52,7 @@ class Household:
         Args:
             person_id (int): ID of the Person instance to add to the household
         """
-        self.persons.append(person_id)
+        self.persons_id.append(person_id)
 
     def serialize(self):
         """Serialize the Household instance
@@ -58,7 +60,7 @@ class Household:
 
         return {
             'number_of_persons': int(self.number_of_persons),
-            'persons': self.persons,
+            'persons': self.persons_id,
             'province': self.province,
             'neighborhood': int(self.neighborhood),
             'house_id': int(self.house_id)
@@ -79,5 +81,5 @@ class Household:
         household = cls(
             data['province'], data['neighborhood'], data['house_id'], data_source)
         household.number_of_persons = data['number_of_persons']
-        household.persons = data['persons']
+        household.persons_id = data['persons']
         return household

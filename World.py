@@ -46,10 +46,20 @@ class World:
         #     self.generate_neighborhoods(i)
         # multi threaded process to speed up population generation
         # 16GB RAM dies with 2 threads... use under own responsability
-        with Pool(n_threads) as p:
-            results = []
-            results.append(p.map(self.generate_neighborhoods,
-                                 (data_source.provinces_population), 3))
+        # with Pool(n_threads) as p:
+        #     results = []
+        #     results.append(p.map(self.generate_neighborhoods,
+        #                          (data_source.provinces_population), 3))
+
+
+    def __create_household_people(self, data_source: DataLoader, number_of_people: int):
+        adult = [Person(self.data_source, True)]
+        temp = number_of_people - 1
+        if temp > 0 :
+            people = [Person(self.data_source) for _ in range(temp)]
+            return adult + people
+        return adult
+    
 
     def generate_neighborhoods(self, province: str, verbose=3):
         """generate neigborhoods for a given province
@@ -86,7 +96,7 @@ class World:
             'pre_univ': [],
             'university': []
         }
-
+        
         # according to distribution, number of schools of each type is calculated
 
         num_of_schools = {
@@ -108,30 +118,41 @@ class World:
         #         del school
 
         # the neighborhoods are created
+
+        people_by_neighborhood = int
+        possible_people_by_household = np.arange(start=1, stop=10, step=1)
+        inhabitants_distribution = np.array(self.data_source.inhabitants_distribution)
         for j in range(total_neighborhoods):
             print(j, '/', total_neighborhoods)
             cont = 0
             neighborhood = []
-            # cont denotes the number of persons in the current neighborhood
-            # while its less than the number of persons per neghborhood
-            while cont < self.data_source.neighborhoods_per_thousand_people * 1000:
-                # print(
-                #     cont, "/", self.data_source.neighborhoods_per_thousand_people * 1000)
-                # a household is created
-                h = Household(province, j, self.house_id, self.data_source)
-                self.house_id += 1
-                cont += h.number_of_persons
-                has_elder = False
-                # all persons in the household get created
-                while not has_elder:
-                    for _ in range(h.number_of_persons):
 
-                        p = Person(data_source=self.data_source)
-                        # a household should have at least one person older than 18
-                        # TODO: re implement this
-                        if p.age > 18:
-                            has_elder = True
+            people_number_by_household = np.random.choice(a=possible_people_by_household,
+                                                p=inhabitants_distribution,
+                                                size=200)
+            
+            current_people = np.sum(people_number_by_household)
 
+            if current_people < int(self.data_source.neighborhoods_per_thousand_people) * 1000:
+                mean = current_people / len(people_number_by_household)
+                temp = int(self.data_source.neighborhoods_per_thousand_people) * 1000 - current_people
+                # print('a', possible_people_by_household)
+                # print('p', inhabitants_distribution)
+                # print('temp', temp, mean, int(temp/mean))
+                extra_households = np.random.choice(a=possible_people_by_household,
+                                                p=inhabitants_distribution,
+                                                size=int(temp/mean))
+                people_number_by_household = np.concatenate((people_number_by_household, extra_households))
+
+            people_by_household = [self.__create_household_people(self.data_source, i) for i in people_number_by_household]
+            serialized_people = [[p.serialize() for p in household] for household in people_by_household]
+            people_id_by_household = [self.db.insert_many("Person", p_list).inserted_id for p_list in serialized_people]
+            households = [Household(province, j, i, self.data_source, people_id_by_household[i]) for i in range(len(people_by_household))]
+            neighborhood = [h.serialize() for h in households]
+            n_id = self.db.insert_one("Neighborhood", {"neighborhood": neighborhood}).inserted_id
+            neighborhoods[province].append(n_id)
+
+            
                         # if the person is a student, gets assigned to a school
                         # the distribution is assumed uniform to get assigned to a school
                         # given that schools are not located in neighborhoods
@@ -141,19 +162,7 @@ class World:
                         #     schools[province][p.study_details][sc].students.append(
                         #         p.id)
 
-                        id = self.db.insert_data(
-                            "Person", p.serialize()).inserted_id
-                        h.persons.append(id)
-                        del p
-                neighborhood.append(h.serialize())
-                del h
-            n_id = self.db.insert_data(
-                "Neighborhood", {"neighborhood": neighborhood}).inserted_id
-            del neighborhood
-            neighborhoods[province].append(n_id)
-            # self.neighborhood_id += 1
-
-        self.db.insert_data("Province", {province: neighborhoods[province]})
+        self.db.insert_one("Province", {province: neighborhoods[province]})
 
         # Find a way to calculate this value
         workplaces_by_province = 0.8

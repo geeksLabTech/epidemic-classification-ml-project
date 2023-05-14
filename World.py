@@ -84,26 +84,31 @@ class World:
         # according to distribution, number of schools of each type is calculated
 
         num_of_schools = {
-            'primary': self.data_source.provinces_population[province] /
+            'primary': (self.data_source.provinces_population[province]/1000) *
             self.data_source.primary_schools_per_thousand_people,
-            'secondary': self.data_source.provinces_population[province] /
+            'secondary': (self.data_source.provinces_population[province]/1000) *
             self.data_source.secondary_schools_per_thousand_people,
-            'pre_univ': self.data_source.provinces_population[province] /
+            'pre_univ': (self.data_source.provinces_population[province] / 1000) *
             self.data_source.pre_universitary_schools_per_thousand_people,
             'university':  self.data_source.universities_per_province
         }
 
         # for each type of school's number of schools
         # a school is created and stored
-        # for sc_tp in num_of_schools.keys():
-        #     # for _ in range(int(num_of_schools[sc_tp])):
-        #     # self.build_school((sc_tp, province))
-        #     with Pool(n_threads) as p:
-        #         schools[sc_tp].append(p.map(self.build_school, [
-        #                               (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))]))
-
+        for sc_tp in num_of_schools.keys():
+            print(sc_tp)
+            # for _ in range(int(num_of_schools[sc_tp])):
+            # self.build_school((sc_tp, province))
+            print(int(num_of_schools[sc_tp]))
+            with Pool(n_threads) as p:
+                schools[sc_tp] = p.map(self.build_school, [
+                                      (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))])
+        print(f"Building {total_neighborhoods}")
         # the neighborhoods are created
         neighborhoods_id = []
+        # for i in range(total_neighborhoods):
+        #     neighborhoods_id.append(
+        #         self.build_neighborhood((i, province, schools)))
         with Pool(n_threads) as p:
             neighborhoods_id.append(p.map(self.build_neighborhood, [
                                     (i, province, schools) for i in range(total_neighborhoods)]))
@@ -168,14 +173,19 @@ class World:
                     # if the person is a student, gets assigned to a school
                     # the distribution is assumed uniform to get assigned to a school
                     # given that schools are not located in neighborhoods
+                    sc = None
                     if p.study:
-                        sc = np.random.choice(schools[p.study_details])[0]
+                        sc = np.random.choice(schools[p.study_details])
 
                     id = self.db.insert_data(
                         "Person", p.serialize()).inserted_id
                     if sc:
                         self.db.update_one(
-                            "School", {"_id": sc}, "students", id)
+                            "School", {"_id": sc}, 'students', id)
+                        # school = self.db.get_data(
+                        #     "School", filter_query={"_id": sc})
+                        # print(school)
+                        # school['students'].append(id)
 
                     h.persons.append(id)
                     del p
@@ -192,5 +202,5 @@ class World:
             "school_type": sc_tp,
             "students": []}
         return self.db.insert_data(
-            "School", school)
+            "School", school).inserted_id
         # del school

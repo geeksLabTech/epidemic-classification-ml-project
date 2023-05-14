@@ -1,3 +1,4 @@
+from responses import start
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
@@ -10,7 +11,8 @@ from multiprocessing import Pool
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
-
+# import time 
+from timeit import default_timer as timer
 
 class World:
     """Environment class where are stored all agents and data for simulation
@@ -35,15 +37,17 @@ class World:
             data_source (DataLoader): Instance of DataLoader with demographic data
             n_threads (int): number of concurrent threads (default: 1)
         """
-
         # dictionaries to easy access neighborhoods and schools
         self.data_source = data_source
         self.person_id = 1
         self.house_id = 1
         self.neighborhood_id = 1
         self.db = MongoCRUD('contact_simulation')
-        # for i in data_source.provinces_population:
-        #     self.generate_neighborhoods(i)
+        for i in data_source.provinces_population:
+            start_time = timer()
+            self.generate_neighborhoods(i)
+            
+            print('termino en ', timer() - start_time)
         # multi threaded process to speed up population generation
         # 16GB RAM dies with 2 threads... use under own responsability
         # with Pool(n_threads) as p:
@@ -123,7 +127,7 @@ class World:
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
         inhabitants_distribution = np.array(self.data_source.inhabitants_distribution)
         for j in range(total_neighborhoods):
-            print(j, '/', total_neighborhoods)
+            # print(j, '/', total_neighborhoods)
             cont = 0
             neighborhood = []
 
@@ -146,7 +150,7 @@ class World:
 
             people_by_household = [self.__create_household_people(self.data_source, i) for i in people_number_by_household]
             serialized_people = [[p.serialize() for p in household] for household in people_by_household]
-            people_id_by_household = [self.db.insert_many("Person", p_list).inserted_id for p_list in serialized_people]
+            people_id_by_household = [self.db.insert_many("Person", p_list).inserted_ids for p_list in serialized_people]
             households = [Household(province, j, i, self.data_source, people_id_by_household[i]) for i in range(len(people_by_household))]
             neighborhood = [h.serialize() for h in households]
             n_id = self.db.insert_one("Neighborhood", {"neighborhood": neighborhood}).inserted_id

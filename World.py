@@ -4,7 +4,7 @@ from simulation.School import School
 # from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 
-import pickle
+# import pickle
 import numpy as np
 from multiprocessing import Pool
 
@@ -43,15 +43,9 @@ class World:
         self.neighborhood_id = 1
         self.db = MongoCRUD('contact_simulation')
         for i in data_source.provinces_population:
-            self.generate_neighborhoods(i)
-        # multi threaded process to speed up population generation
-        # 16GB RAM dies with 2 threads... use under own responsability
-        # with Pool(n_threads) as p:
-        #     results = []
-        #     results.append(p.map(self.generate_neighborhoods,
-        #                          (data_source.provinces_population), 3))
+            self.generate_province(i)
 
-    def generate_neighborhoods(self, province: str, n_threads: int = 12, verbose=3):
+    def generate_province(self, province: str, n_threads: int = 12, verbose=3):
         """generate neigborhoods for a given province
 
         Args:
@@ -63,7 +57,7 @@ class World:
         """
 
         neighborhoods = {}
-        schools = {}
+        workplaces = []
         # workplaces: dict[str, list[Workplace]] = {}
         # according to distribution, the province population is divided by
         # the number of people per neighborhood
@@ -80,7 +74,7 @@ class World:
         neighborhoods[province] = []
 
         # schools in province are organized according to school type
-        schools[province] = {
+        schools = {
             'primary': [],
             'secondary': [],
             'pre_univ': [],
@@ -90,32 +84,44 @@ class World:
         # according to distribution, number of schools of each type is calculated
 
         num_of_schools = {
-            'primary': self.data_source.provinces_population[province] /
+            'primary': (self.data_source.provinces_population[province]/1000) *
             self.data_source.primary_schools_per_thousand_people,
-            'secondary': self.data_source.provinces_population[province] /
+            'secondary': (self.data_source.provinces_population[province]/1000) *
             self.data_source.secondary_schools_per_thousand_people,
-            'pre_univ': self.data_source.provinces_population[province] /
+            'pre_univ': (self.data_source.provinces_population[province] / 1000) *
             self.data_source.pre_universitary_schools_per_thousand_people,
             'university':  self.data_source.universities_per_province
         }
 
         # for each type of school's number of schools
         # a school is created and stored
-        # for sc_tp in num_of_schools.keys():
-        #     for _ in range(int(num_of_schools[sc_tp])):
-        #         school = School(province, sc_tp)
-        #         self.db.insert_data("School", school.serialize())
-        #         del school
-
+        for sc_tp in num_of_schools.keys():
+            print(sc_tp)
+            # for _ in range(int(num_of_schools[sc_tp])):
+            # self.build_school((sc_tp, province))
+            print(int(num_of_schools[sc_tp]))
+            with Pool(n_threads) as p:
+                schools[sc_tp] = p.map(self.build_school, [
+                                      (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))])
+        print(f"Building {total_neighborhoods}")
         # the neighborhoods are created
         neighborhoods_id = []
+        # for i in range(total_neighborhoods):
+        #     neighborhoods_id.append(
+        #         self.build_neighborhood((i, province, schools)))
         with Pool(n_threads) as p:
             neighborhoods_id.append(p.map(self.build_neighborhood, [
-                                    (i, province) for i in range(total_neighborhoods)]))
+                                    (i, province, schools) for i in range(total_neighborhoods)]))
         neighborhoods[province].append(neighborhoods_id)
         # self.neighborhood_id += 1
 
-        self.db.insert_data("Province", {province: neighborhoods[province]})
+        self.db.insert_data("Province", {
+            province: {
+                "neighborhoods": neighborhoods[province],
+                "schools": schools,
+                "workplaces": workplaces
+            }
+        })
 
         # Find a way to calculate this value
         workplaces_by_province = 0.8
@@ -143,7 +149,7 @@ class World:
             print("Finished:", province)
 
     def build_neighborhood(self, data):
-        n_id, province = data
+        n_id, province, schools = data
         cont = 0
         neighborhood = []
         # cont denotes the number of persons in the current neighborhood
@@ -167,13 +173,20 @@ class World:
                     # if the person is a student, gets assigned to a school
                     # the distribution is assumed uniform to get assigned to a school
                     # given that schools are not located in neighborhoods
-                    # if p.study:
-                    #     sc = np.random.choice(
-                    #         len(schools[province][p.study_details]), 1)[0]
-                    #     schools[province][p.study_details][sc].students.append(
-                    #         p.id)
+                    sc = None
+                    if p.study:
+                        sc = np.random.choice(schools[p.study_details])
+
                     id = self.db.insert_data(
                         "Person", p.serialize()).inserted_id
+                    if sc:
+                        self.db.update_one(
+                            "School", {"_id": sc}, 'students', id)
+                        # school = self.db.get_data(
+                        #     "School", filter_query={"_id": sc})
+                        # print(school)
+                        # school['students'].append(id)
+
                     h.persons.append(id)
                     del p
             neighborhood.append(h.serialize())
@@ -181,3 +194,13 @@ class World:
         n_id = self.db.insert_data(
             "Neighborhood", {"neighborhood": neighborhood}).inserted_id
         return n_id
+
+    def build_school(self, data):
+        sc_tp, province = data
+        school = {
+            "province": province,
+            "school_type": sc_tp,
+            "students": []}
+        return self.db.insert_data(
+            "School", school).inserted_id
+        # del school

@@ -237,7 +237,7 @@ class World:
 
                             pairs = self.generate_contacts(sc_obj.students, 40)
                             self.insert_pairs(pairs,  population_name,
-                                              str(sc_tp)+' school')
+                                              str(sc_tp)+' school', province)
 
                     # geenrate contacts in house and store all persons to
                     # generate neighborhood contacts
@@ -253,12 +253,12 @@ class World:
                                 house['persons'], house["n_persons"])
 
                             self.insert_pairs(
-                                day, pairs, population_name, "home")
+                                day, pairs, population_name, "home", province)
 
                         pairs = self.generate_contacts(
                             persons, np.random.randint(5, 30))
                         self.insert_pairs(
-                            day, pairs, population_name, "neighborhood")
+                            day, pairs, population_name, "neighborhood", province)
 
     def generate_contacts(self, arr: list, n_contacts: int):  # -> list(tuple(int,int))
         # Repeat each element 30 times
@@ -280,17 +280,18 @@ class World:
 
         return pairs
 
-    def insert_pairs(self, day, pairs, population, place):
+    def insert_pairs(self, day, pairs, population, place, province):
         for p in pairs:
             p1, p2 = self.db.get_data("People", {"_id": p[0]}), self.db.get_data(
                 "People", {"_id": p[0]}),
 
             contact = {
-                "day": day
+                "day": day,
                 "population": population,
                 "place": place,
                 "p1": p1['age'],
-                "p2": p2['age']
+                "p2": p2['age'],
+                "province": province
             }
 
             self.db.insert_data("Contact", contact)

@@ -30,21 +30,31 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self):
+    def __init__(self, data_loader: DataLoader):
         """initialization function
         """
+        self.data_source = data_loader
+
+        self.age_groups = np.array(self.data_source.age_groups)
+
         self.total_population = 0
         self.db = MongoCRUD('contact_simulation')
 
-    def generate_population(self, population_name: str, data_source: DataLoader, n_threads: int = 12):
-        self.data_source = data_source
-        self.person_id = 1
-        self.house_id = 1
-        self.neighborhood_id = 1
+    def get_age_group(self, age: int):
+        interval_index = np.where(
+            (age >= self.age_groups[:, 0]) & (age <= self.age_groups[:, 1]))[0]
+
+        if interval_index.size > 0:
+            interval_index = interval_index[0]
+        else:
+            interval_index = -1
+        return interval_index
+
+    def generate_population(self, population_name: str, n_threads: int = 12):
 
         provinces = []
 
-        for i in data_source.provinces_population:
+        for i in self.data_source.provinces_population:
             provinces.append(self.generate_province(i, n_threads=n_threads))
 
         self.db.insert_data("Population", {"population_name": population_name,
@@ -287,7 +297,7 @@ class World:
 
             contact = {
                 "day": day,
-                "population": population,
+                "population_name": population,
                 "place": place,
                 "p1": p1['age'],
                 "p2": p2['age'],
@@ -295,3 +305,38 @@ class World:
             }
 
             self.db.insert_data("Contact", contact)
+
+    def generate_contact_matrix(self, population_name: str, province: str = None, place: str = None):
+
+        filt = {"population_name": population_name}
+        if province:
+            filt['province'] = province
+        if place:
+            filt['place'] = place
+
+        contacts = self.db.get_data(
+            "Contact", filter)
+
+        matrix = np.zeros((len(self.data_source.age_groups),
+                          len(self.data_source.age_groups)))
+
+        n_days = 0
+        for c in contacts:
+            idx1 = self.get_age_group(c["p1"])
+            idx2 = self.get_age_group(c["p2"])
+            n_days = max(n_days, c['day'])
+            matrix[idx1][idx2] += 1
+            matrix[idx2][idx1] += 1
+
+        matrix /= n_days
+
+        total_people = self.db.get_data(
+            "Population", {"population_name": population_name})["total_population"]
+
+        for i, row in enumerate(matrix):
+            for j, element in enumerate(row):
+                factor = (total_people*self.data_source.distribution_by_age_groups[i]) * (
+                    total_people*self.data_source.distribution_by_age_groups[j])
+                matrix[i][j] /= factor
+
+        return matrix

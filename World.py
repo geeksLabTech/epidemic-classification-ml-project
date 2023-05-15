@@ -8,6 +8,7 @@ from simulation.School import School
 import pickle
 import numpy as np
 from multiprocessing import Pool
+import multiprocessing
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
@@ -46,7 +47,7 @@ class World:
         for i in data_source.provinces_population:
             start_time = timer()
             self.generate_neighborhoods(i)
-            
+                
             print('termino en ', timer() - start_time)
         # multi threaded process to speed up population generation
         # 16GB RAM dies with 2 threads... use under own responsability
@@ -56,14 +57,23 @@ class World:
         #                          (data_source.provinces_population), 3))
 
 
-    def __create_household_people(self, data_source: DataLoader, number_of_people: int):
-        adult = [Person(self.data_source, True)]
+    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood):
+        adult = [Person(self.data_source, True).serialize()]
         temp = number_of_people - 1
         if temp > 0 :
-            people = [Person(self.data_source) for _ in range(temp)]
-            return adult + people
-        return adult
+            people = [Person(self.data_source).serialize() for _ in range(temp)]
+            people_ids = self.db.insert_many('Person', people+adult).inserted_ids
+        else:
+            people_ids = [self.db.insert_one('Person', adult[0]).inserted_id]
+
+        h = Household(province, neighborhood, self.data_source, people_ids, number_of_people)
+        return h.serialize()
     
+    def parallel_household_creation(self, people_number_by_household, province, i, return_dict):
+        # print(f'started proccess {i}')
+        r = [self.__create_and_serialize_household(province, people_number_by_household[i][j], i) for j in range(people_number_by_household.shape[1])]
+        return_dict[i] = r
+        # print(f'finished proccess {i}')
 
     def generate_neighborhoods(self, province: str, verbose=3):
         """generate neigborhoods for a given province
@@ -122,39 +132,31 @@ class World:
         #         del school
 
         # the neighborhoods are created
-
-        people_by_neighborhood = int
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
         inhabitants_distribution = np.array(self.data_source.inhabitants_distribution)
-        for j in range(total_neighborhoods):
-            # print(j, '/', total_neighborhoods)
-            cont = 0
-            neighborhood = []
-
-            people_number_by_household = np.random.choice(a=possible_people_by_household,
+        total_households_by_neighborhoods =  int(1000 / (np.argmax(inhabitants_distribution)+1)) 
+        people_number_by_household = np.random.choice(a=possible_people_by_household,
                                                 p=inhabitants_distribution,
-                                                size=200)
-            
-            current_people = np.sum(people_number_by_household)
+                                                size=(total_neighborhoods,total_households_by_neighborhoods))
+        
+        # print(people_number_by_household)
+        # print('aa', np.argmax(inhabitants_distribution))
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        jobs = []
 
-            if current_people < int(self.data_source.neighborhoods_per_thousand_people) * 1000:
-                mean = current_people / len(people_number_by_household)
-                temp = int(self.data_source.neighborhoods_per_thousand_people) * 1000 - current_people
-                # print('a', possible_people_by_household)
-                # print('p', inhabitants_distribution)
-                # print('temp', temp, mean, int(temp/mean))
-                extra_households = np.random.choice(a=possible_people_by_household,
-                                                p=inhabitants_distribution,
-                                                size=int(temp/mean))
-                people_number_by_household = np.concatenate((people_number_by_household, extra_households))
+        for i in range(people_number_by_household.shape[0]):
+            p = multiprocessing.Process(target=self.parallel_household_creation, args=(people_number_by_household, province, i, return_dict))
+            jobs.append(p)
+            p.start()
 
-            people_by_household = [self.__create_household_people(self.data_source, i) for i in people_number_by_household]
-            serialized_people = [[p.serialize() for p in household] for household in people_by_household]
-            people_id_by_household = [self.db.insert_many("Person", p_list).inserted_ids for p_list in serialized_people]
-            households = [Household(province, j, i, self.data_source, people_id_by_household[i]) for i in range(len(people_by_household))]
-            neighborhood = [h.serialize() for h in households]
-            n_id = self.db.insert_one("Neighborhood", {"neighborhood": neighborhood}).inserted_id
+        for proc in jobs:
+            proc.join()
+
+        for key in return_dict:
+            n_id = self.db.insert_one("Neighborhood", {"neighborhood": return_dict[key]}).inserted_id
             neighborhoods[province].append(n_id)
+        
 
             
                         # if the person is a student, gets assigned to a school

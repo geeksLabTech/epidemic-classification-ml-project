@@ -1,6 +1,8 @@
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
+from time import sleep
+import datetime
 # from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 
@@ -28,35 +30,37 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, data_source: DataLoader, n_threads: int = 12):
-        """initialization function, crteates world concurrently
-
-        Args:
-            data_source (DataLoader): Instance of DataLoader with demographic data
-            n_threads (int): number of concurrent threads (default: 1)
+    def __init__(self):
+        """initialization function
         """
+        self.total_population = 0
+        self.db = MongoCRUD('contact_simulation')
 
-        # dictionaries to easy access neighborhoods and schools
+    def generate_population(self, population_name: str, data_source: DataLoader, n_threads: int = 12):
         self.data_source = data_source
         self.person_id = 1
         self.house_id = 1
         self.neighborhood_id = 1
-        self.db = MongoCRUD('contact_simulation')
+
+        provinces = []
+
         for i in data_source.provinces_population:
-            self.generate_province(i)
+            provinces.append(self.generate_province(i, n_threads=n_threads))
+
+        self.db.insert_data("Population", {"population_name": population_name,
+                            "provinces": provinces, "total_population": self.total_population})
 
     def generate_province(self, province: str, n_threads: int = 12, verbose=3):
         """generate neigborhoods for a given province
 
         Args:
-            province (str): 
-                province name, to access province related data and for taggig 
-                the data generated here 
+            province (str):
+                province name, to access province related data and for taggig
+                the data generated here
             verbose (int):
                 integer denoting log level, for debug proposes (default: 0)
         """
 
-        neighborhoods = {}
         workplaces = []
         # workplaces: dict[str, list[Workplace]] = {}
         # according to distribution, the province population is divided by
@@ -67,11 +71,6 @@ class World:
 
         if verbose >= 2:
             print(province)
-
-        # the neighborhood dictionary gets assigned to the province a list
-        # a neighborhood is a list of households, denoting closeness between
-        # all hosueholds inside a neighborhood
-        neighborhoods[province] = []
 
         # schools in province are organized according to school type
         schools = {
@@ -103,25 +102,19 @@ class World:
             with Pool(n_threads) as p:
                 schools[sc_tp] = p.map(self.build_school, [
                                       (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))])
+
         print(f"Building {total_neighborhoods}")
+        neighborhoods = []
         # the neighborhoods are created
         neighborhoods_id = []
         # for i in range(total_neighborhoods):
         #     neighborhoods_id.append(
         #         self.build_neighborhood((i, province, schools)))
         with Pool(n_threads) as p:
-            neighborhoods_id.append(p.map(self.build_neighborhood, [
-                                    (i, province, schools) for i in range(total_neighborhoods)]))
-        neighborhoods[province].append(neighborhoods_id)
+            neighborhoods_id = p.map(self.build_neighborhood, [
+                (i, province, schools) for i in range(total_neighborhoods)])
+        neighborhoods.append(neighborhoods_id)
         # self.neighborhood_id += 1
-
-        self.db.insert_data("Province", {
-            province: {
-                "neighborhoods": neighborhoods[province],
-                "schools": schools,
-                "workplaces": workplaces
-            }
-        })
 
         # Find a way to calculate this value
         workplaces_by_province = 0.8
@@ -144,9 +137,21 @@ class World:
         # with open(f"population_data/{province}.pickle", "wb") as f:
         #     pickle.dump(
         #         {"neighborhoods": neighborhoods, "schools": schools}, f)
+        prov_id = self.db.insert_data("Province", {
+            province: {
+                "neighborhoods": neighborhoods,
+                "schools": schools,
+                "workplaces": workplaces
+            }
+        }).inserted_id
 
         if verbose >= 2:
             print("Finished:", province)
+        with open("date.txt", 'a') as f:
+            f.write(province)
+            f.write(str(datetime.datetime.now()))
+
+        return prov_id
 
     def build_neighborhood(self, data):
         n_id, province, schools = data
@@ -162,6 +167,7 @@ class World:
             self.house_id += 1
             cont += h.number_of_persons
             has_elder = False
+            self.total_population += h.number_of_persons
             # all persons in the household get created
             while not has_elder:
                 for _ in range(h.number_of_persons):
@@ -204,3 +210,87 @@ class World:
         return self.db.insert_data(
             "School", school).inserted_id
         # del school
+
+    def run_simulation(self, population_name: str, n_days: int = 100):
+        population: dict = self.db.get_data(
+            "Population", {"population_name": population_name})
+
+        if population:
+            provinces = population['provinces']
+
+            # each day will be divided in 3 possible contact moments
+            # 1: At Work/School (contacts related to the workplace and school representing the day for the people in the population)
+            # 2: In the neighborhood (contacts in the neighborhood, in this step is assumed contact between friends)
+            # 3: In House conttacts (family members)
+            for day in range(1, n_days):
+
+                # TODO: extract this to paralelize
+                for province in provinces:
+                    # TODO: to be implemented
+                    for workplace in province['workplaces']:
+                        pass
+
+                    for sc_tp in province['schools']:
+                        for school in sc_tp:
+                            sc_obj = School.load_serialized(
+                                self.db.get_data("School", {"_id": school}))
+
+                            pairs = self.generate_contacts(sc_obj.students, 40)
+                            self.insert_pairs(pairs,  population_name,
+                                              str(sc_tp)+' school')
+
+                    # geenrate contacts in house and store all persons to
+                    # generate neighborhood contacts
+                    for n_id in province['neighborhoods']:
+                        neighborhood = self.db.get_data(
+                            'Neighborhood', {"_id": n_id})
+
+                        persons = []
+
+                        for house in neighborhood:
+                            persons.append(house['persons'])
+                            pairs = self.generate_contacts(
+                                house['persons'], house["n_persons"])
+
+                            self.insert_pairs(
+                                day, pairs, population_name, "home")
+
+                        pairs = self.generate_contacts(
+                            persons, np.random.randint(5, 30))
+                        self.insert_pairs(
+                            day, pairs, population_name, "neighborhood")
+
+    def generate_contacts(self, arr: list, n_contacts: int):  # -> list(tuple(int,int))
+        # Repeat each element 30 times
+        repeated_arr = np.repeat(arr, n_contacts)
+
+        # Shuffle the repeated array
+        np.random.shuffle(repeated_arr)
+
+        # Tile the array to match the repeated length
+        tiled_arr = np.tile(arr, n_contacts)
+
+        # Combine the shuffled and tiled arrays to form pairs
+        pairs = np.column_stack((repeated_arr, tiled_arr))
+
+        # Filter out reflexive pairs and duplicates
+        pairs = pairs[pairs[:, 0] != pairs[:, 1]]
+        pairs.sort(axis=1)
+        pairs = np.unique(pairs, axis=0)
+
+        return pairs
+
+    def insert_pairs(self, day, pairs, population, place):
+        for p in pairs:
+            p1, p2 = self.db.get_data("People", {"_id": p[0]}), self.db.get_data(
+                "People", {"_id": p[0]}),
+
+            contact = {
+                "day": day
+                "population": population,
+                "place": place,
+                "p1": p1['age'],
+                "p2": p2['age']
+            }
+
+            self.db.insert_data("Contact", contact)

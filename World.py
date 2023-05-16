@@ -1,4 +1,4 @@
-from responses import start
+
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
@@ -57,22 +57,48 @@ class World:
         #                          (data_source.provinces_population), 3))
 
 
-    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood):
+    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood, people_by_school_type):
         adult = [Person(self.data_source, True).serialize()]
         temp = number_of_people - 1
         if temp > 0 :
             people = [Person(self.data_source).serialize() for _ in range(temp)]
             people_ids = self.db.insert_many('Person', people+adult).inserted_ids
+            for i in range(len(people)):
+                if 'study_details' in people[i]:
+                    if not people[i]['study_details'] in people_by_school_type:
+                        people_by_school_type[people[i]['study_details']] = []
+                    people_by_school_type[people[i]['study_details']].append(people_ids[i])
+                    # print('entro', people_by_school_type)
         else:
             people_ids = [self.db.insert_one('Person', adult[0]).inserted_id]
+            if 'study_details' in adult[0]:
+                if not adult[0]['study_details'] in people_by_school_type:
+                    people_by_school_type[adult[0]['study_details']] = []
+                people_by_school_type[adult[0]['study_details']].append(people_ids[0])
 
+        # print('people by school type', people_by_school_type[province])
+        # print(len(people_by_school_type['primary']), len(people_by_school_type['secondary']), len(people_by_school_type['pre_univ']), len(people_by_school_type['university']))
         h = Household(province, neighborhood, self.data_source, people_ids, number_of_people)
-        return h.serialize()
+        return h.serialize(), people_by_school_type
     
-    def parallel_household_creation(self, people_number_by_household, province, i, return_dict):
+    def parallel_household_creation(self, people_number_by_household, province, i, household_by_neighborhood: dict, people_by_school_type: dict):
         # print(f'started proccess {i}')
-        r = [self.__create_and_serialize_household(province, people_number_by_household[i][j], i) for j in range(people_number_by_household.shape[1])]
-        return_dict[i] = r
+        households = []
+        temp = {
+            'primary': [],
+            'secondary': [],
+            'pre_univ': [],
+            'university': []
+        }
+        for j in range(people_number_by_household.shape[1]):
+            h = self.__create_and_serialize_household(province, people_number_by_household[i][j], i, temp)
+            households.append(h)
+            people_by_school_type.update(temp)
+            # for sc_tp in new_people_by_school_type[province]:
+            #     people_by_school_type[province][sc_tp].extend(new_people_by_school_type[province][sc_tp])
+            
+        
+        household_by_neighborhood[i] = households
         # print(f'finished proccess {i}')
 
     def generate_neighborhoods(self, province: str, verbose=3):
@@ -87,7 +113,6 @@ class World:
         """
 
         neighborhoods = {}
-        schools = {}
         # workplaces: dict[str, list[Workplace]] = {}
         # according to distribution, the province population is divided by
         # the number of people per neighborhood
@@ -103,13 +128,7 @@ class World:
         # all hosueholds inside a neighborhood
         neighborhoods[province] = []
 
-        # schools in province are organized according to school type
-        schools[province] = {
-            'primary': [],
-            'secondary': [],
-            'pre_univ': [],
-            'university': []
-        }
+        
         
         # according to distribution, number of schools of each type is calculated
 
@@ -123,14 +142,6 @@ class World:
             'university':  self.data_source.universities_per_province
         }
 
-        # for each type of school's number of schools
-        # a school is created and stored
-        # for sc_tp in num_of_schools.keys():
-        #     for _ in range(int(num_of_schools[sc_tp])):
-        #         school = School(province, sc_tp)
-        #         self.db.insert_data("School", school.serialize())
-        #         del school
-
         # the neighborhoods are created
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
         inhabitants_distribution = np.array(self.data_source.inhabitants_distribution)
@@ -139,34 +150,45 @@ class World:
                                                 p=inhabitants_distribution,
                                                 size=(total_neighborhoods,total_households_by_neighborhoods))
         
-        # print(people_number_by_household)
-        # print('aa', np.argmax(inhabitants_distribution))
+
         manager = multiprocessing.Manager()
-        return_dict = manager.dict()
+        households_by_neighborhood_dict = manager.dict()
+        schools = manager.dict()
+
+        # schools in province are organized according to school type
+        # schools[province] = {
+        #     'primary': [],
+        #     'secondary': [],
+        #     'pre_univ': [],
+        #     'university': []
+        # } 
+        schools['primary'] = []
+        schools['secondary'] = []
+        schools['pre_univ'] = []
+        schools['university'] = []
+
         jobs = []
 
         for i in range(people_number_by_household.shape[0]):
-            p = multiprocessing.Process(target=self.parallel_household_creation, args=(people_number_by_household, province, i, return_dict))
+            p = multiprocessing.Process(target=self.parallel_household_creation, args=(people_number_by_household, province, i, households_by_neighborhood_dict, schools))
             jobs.append(p)
             p.start()
 
         for proc in jobs:
             proc.join()
 
-        for key in return_dict:
-            n_id = self.db.insert_one("Neighborhood", {"neighborhood": return_dict[key]}).inserted_id
+        for key in households_by_neighborhood_dict:
+            n_id = self.db.insert_one("Neighborhood", {"neighborhood": households_by_neighborhood_dict[key]}).inserted_id
             neighborhoods[province].append(n_id)
         
-
+        for key in schools:
+            if len(schools[key]) == 0:
+                print(f'school of type {key} in {province} empty')
+                continue
             
-                        # if the person is a student, gets assigned to a school
-                        # the distribution is assumed uniform to get assigned to a school
-                        # given that schools are not located in neighborhoods
-                        # if p.study:
-                        #     sc = np.random.choice(
-                        #         len(schools[province][p.study_details]), 1)[0]
-                        #     schools[province][p.study_details][sc].students.append(
-                        #         p.id)
+            students_id_assigned = np.random.choice(a=np.arange(num_of_schools['primary']), size=len(schools[key]))
+            self.build_and_save_schools(key, province, students_id_assigned, schools[key])
+                        
 
         self.db.insert_one("Province", {province: neighborhoods[province]})
 
@@ -194,3 +216,16 @@ class World:
 
         if verbose >= 2:
             print("Finished:", province)
+
+
+    def build_and_save_schools(self, school_type: str, province: str, students_id_assigned, students_id: list):
+        splitted_students_by_school = {}
+        # print('len(students_id_assigned)', len(students_id_assigned))
+        for i in range(len(students_id_assigned)):
+            if students_id_assigned[i] not in splitted_students_by_school:
+                splitted_students_by_school[students_id_assigned[i]] = []
+            splitted_students_by_school[students_id_assigned[i]].append(students_id[i])
+
+        schools_to_insert = [School(province, school_type, splitted_students_by_school[key]).serialize() for key in splitted_students_by_school]
+        # print('len(schools_to_insert)', len(schools_to_insert))
+        self.db.insert_many("School", schools_to_insert)

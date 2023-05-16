@@ -197,6 +197,8 @@ class World:
         i = 0
         while i < (people_number_by_household.shape[0]):
             for _ in range(n_threads):
+                if i == people_number_by_household.shape[0]:
+                    break
                 p = multiprocessing.Process(target=self.parallel_household_creation, args=(
                     people_number_by_household, province, i, households_by_neighborhood_dict, schools))
                 jobs.append(p)
@@ -268,3 +270,123 @@ class World:
         ) for key in splitted_students_by_school]
         # print('len(schools_to_insert)', len(schools_to_insert))
         self.db.insert_many("School", schools_to_insert)
+
+    def run_simulation(self, population_name: str, n_days: int = 100):
+        population: dict = self.db.get_one(
+            "Population", {"population_name": population_name})
+
+        if population:
+            provinces = population['provinces']
+
+            # each day will be divided in 3 possible contact moments
+            # 1: At Work/School (contacts related to the workplace and school representing the day for the people in the population)
+            # 2: In the neighborhood (contacts in the neighborhood, in this step is assumed contact between friends)
+            # 3: In House conttacts (family members)
+            for day in range(1, n_days):
+
+                # TODO: extract this to paralelize
+                for province in provinces:
+                    # TODO: to be implemented
+                    for workplace in province['workplaces']:
+                        pass
+
+                    for sc_tp in province['schools']:
+                        for school in sc_tp:
+                            sc_obj = School.load_serialized(
+                                self.db.get_data("School", {"_id": school}))
+
+                            pairs = self.generate_contacts(sc_obj.students, 40)
+                            self.insert_pairs(day, pairs,  population_name,
+                                              str(sc_tp)+' school', province)
+
+                    # geenrate contacts in house and store all persons to
+                    # generate neighborhood contacts
+                    for n_id in province['neighborhoods']:
+                        neighborhood = self.db.get_data(
+                            'Neighborhood', {"_id": n_id})
+
+                        persons = []
+
+                        for house in neighborhood:
+                            persons.append(house['persons'])
+                            pairs = self.generate_contacts(
+                                house['persons'], house["n_persons"])
+
+                            self.insert_pairs(
+                                day, pairs, population_name, "home", province)
+
+                        pairs = self.generate_contacts(
+                            persons, np.random.randint(5, 30))
+                        self.insert_pairs(
+                            day, pairs, population_name, "neighborhood", province)
+
+    def generate_contacts(self, arr: list, n_contacts: int):  # -> list(tuple(int,int))
+        # Repeat each element 30 times
+        repeated_arr = np.repeat(arr, n_contacts)
+
+        # Shuffle the repeated array
+        np.random.shuffle(repeated_arr)
+
+        # Tile the array to match the repeated length
+        tiled_arr = np.tile(arr, n_contacts)
+
+        # Combine the shuffled and tiled arrays to form pairs
+        pairs = np.column_stack((repeated_arr, tiled_arr))
+
+        # Filter out reflexive pairs and duplicates
+        pairs = pairs[pairs[:, 0] != pairs[:, 1]]
+        pairs.sort(axis=1)
+        pairs = np.unique(pairs, axis=0)
+
+        return pairs
+
+    def insert_pairs(self, day, pairs, population, place, province):
+        for p in pairs:
+            p1 = self.db.get_one("People", {"_id": p[0]})
+            p2 = self.db.get_one("People", {"_id": p[0]})
+
+            contact = {
+                "day": day,
+                "population_name": population,
+                "place": place,
+                "p1": p1['age'],
+                "p2": p2['age'],
+                "province": province
+            }
+
+            self.db.insert_one("Contact", contact)
+
+    def generate_contact_matrix(self, population_name: str, province: str = None, place: str = None):
+
+        filt = {"population_name": population_name}
+        if province:
+            filt['province'] = province
+        if place:
+            filt['place'] = place
+
+        contacts = self.db.get_data(
+            "Contact", filter)
+
+        matrix = np.zeros((len(self.data_source.age_groups),
+                          len(self.data_source.age_groups)))
+
+        n_days = 0
+        for c in contacts:
+            idx1 = self.get_age_group(c["p1"])
+            idx2 = self.get_age_group(c["p2"])
+            n_days = max(n_days, c['day'])
+            matrix[idx1][idx2] += 1
+            matrix[idx2][idx1] += 1
+
+        matrix /= n_days
+
+        total_people = self.db.get_one(
+            "Population", {"population_name": population_name})["total_population"]
+
+        for i, row in enumerate(matrix):
+            for j, element in enumerate(row):
+                factor = (total_people*self.data_source.distribution_by_age_groups[i]) * (
+                    total_people*self.data_source.distribution_by_age_groups[j])
+                matrix[i][j] /= factor
+
+        return matrix

@@ -22,6 +22,7 @@ class DataLoader:
             'man_distribution_by_economic_activity',
             'woman_distribution_by_economic_activity',
             'age_groups',
+            'total_enrrollment',
             'provinces_population',
             'neighborhoods_per_thousand_people',
             'primary_schools_per_thousand_people',
@@ -41,6 +42,8 @@ class DataLoader:
                 f"Provided JSON is invalid, fields {missing} were expected but not found")
 
         self.total_population = data['total_population']
+        self.total_enrrollment = data['total_enrrollment']
+
         self.distribution_by_age_groups = data['distribution_by_age_groups']
         self.age_groups = data['age_groups']
         self.distribution_of_man_or_woman = data['distribution_of_man_or_woman']

@@ -40,7 +40,8 @@ class Person:
         # age_group is assigned according to the distibution
         # age_group is assigned according to the distibution
         if is_adult_required:
-            adult_groups_idx = np.arange(start=4, stop=len(data_source.age_groups))
+            adult_groups_idx = np.arange(
+                start=4, stop=len(data_source.age_groups))
             adult_groups_distribution = data_source.distribution_by_age_groups[4:]
             # self.age_group = np.random.choice(a=adult_groups_idx, p=adult_groups_distribution, size=1)
             self.age_group = np.random.choice(a=adult_groups_idx, size=1)[0]
@@ -55,7 +56,7 @@ class Person:
         start_age, stop_age = data_source.age_groups[self.age_group]
         possible_ages = np.arange(start=start_age, stop=stop_age, step=1)
         self.age = np.random.choice(a=possible_ages, size=1)
-        
+
         # sex is also selected using the probabilities in data_distribution
         self.sex = bool(np.random.choice(
             2, 1, p=data_source.distribution_of_man_or_woman)[0])
@@ -72,14 +73,14 @@ class Person:
 
         # pre-universitary is assigned according to the distribution
         elif self.age > 15 and self.age < 18:
-            if np.random.random() < data_source.enrollment_distribution[2]/data_source.total_population:
+            if np.random.random() < data_source.enrollment_distribution[2]/data_source.total_enrrollment:
                 self.study_details = 'pre_univ'
                 self.study = True
 
         # for university, in case of a person being over 30 years
         # the probability of studying is gradually reduced
         elif self.age > 18:
-            population_coef = data_source.total_population
+            population_coef = data_source.total_enrrollment
             if self.age > 30:
                 population_coef *= self.age/10
             if np.random.random() < data_source.enrollment_distribution[3]/population_coef:

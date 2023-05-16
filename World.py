@@ -325,7 +325,6 @@ class World:
                                 self.insert_pairs(
                                     day, pairs, population_name, "home", province)
 
-                            print(len(persons))
                             if len(persons) <= 1:
                                 continue
 
@@ -340,7 +339,6 @@ class World:
             return []
 
         arr = [i for i, j in enumerate(persons)]
-        print(arr, persons)
 
         # Repeat each element 30 times
         repeated_arr = np.repeat(arr, n_contacts)
@@ -376,9 +374,6 @@ class World:
                 "p2": p2['age'],
                 "province": province["province_name"]
             }
-
-            print(contact)
-
             self.db.insert_one("Contact", contact)
 
     def generate_contact_matrix(self, population_name: str, province: str = None, place: str = None):
@@ -389,14 +384,15 @@ class World:
         if place:
             filt['place'] = place
 
-        contacts = self.db.get_one(
-            "Contact", filter)
+        contacts = self.db.get_data(
+            "Contact", filt)
 
         matrix = np.zeros((len(self.data_source.age_groups),
                            len(self.data_source.age_groups)))
 
         n_days = 0
         for c in contacts:
+            print(c)
             idx1 = self.get_age_group(c["p1"])
             idx2 = self.get_age_group(c["p2"])
             n_days = max(n_days, c['day'])
@@ -412,6 +408,7 @@ class World:
             for j, element in enumerate(row):
                 factor = (total_people*self.data_source.distribution_by_age_groups[i]) * (
                     total_people*self.data_source.distribution_by_age_groups[j])
-                matrix[i][j] /= factor
+                if factor != 0:
+                    matrix[i][j] /= factor
 
         return matrix

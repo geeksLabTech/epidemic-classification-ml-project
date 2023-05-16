@@ -10,7 +10,7 @@ w = World(dl)
 
 # w.generate_population("CUBA", n_threads=100)
 w.run_simulation("CUBA", 2)
-w.generate_contact_matrix("CUBA")
-
+m = w.generate_contact_matrix("CUBA")
+print(m)
 # with open("date.txt", "a") as f:
 #     f.write(str(datetime.datetime.now()))

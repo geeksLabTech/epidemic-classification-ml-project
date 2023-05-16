@@ -1,7 +1,6 @@
 # from data_distribution import prob_density
 import numpy as np
 from data_loader import DataLoader
-from .Person import Person
 
 import json
 

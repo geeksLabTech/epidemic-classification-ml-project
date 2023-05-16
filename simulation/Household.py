@@ -1,7 +1,7 @@
 # from data_distribution import prob_density
 import numpy as np
 from data_loader import DataLoader
-
+from .Person import Person
 
 import json
 
@@ -23,7 +23,7 @@ class Household:
 
     """
 
-    def __init__(self, province: str, neighborhood: int, data_source: DataLoader):
+    def __init__(self, province: str, neighborhood: int, data_source: DataLoader, persons_id, number_of_people: int):
         """
 
         Args:
@@ -35,11 +35,11 @@ class Household:
         # according to household size probability in data_distribution
         # a number of inhabitants is generated
         # min val: 1, max val: 9
-        self.number_of_persons = np.random.choice(
-            9, 1, p=data_source.inhabitants_distribution)[0]+1
+        self.number_of_persons = number_of_people
 
         # initially persons list is empty, on World creation, the inhabitants will be added
-        self.persons = []
+        self.persons_id = persons_id
+        # self.house_id = h_id
         self.province = province
         self.neighborhood = neighborhood
 
@@ -49,7 +49,7 @@ class Household:
         Args:
             person_id (int): ID of the Person instance to add to the household
         """
-        self.persons.append(person_id)
+        self.persons_id.append(person_id)
 
     def serialize(self):
         """Serialize the Household instance
@@ -57,7 +57,7 @@ class Household:
 
         return {
             'number_of_persons': int(self.number_of_persons),
-            'persons': self.persons,
+            'persons': self.persons_id,
             'province': self.province,
             'neighborhood': int(self.neighborhood)
         }
@@ -74,8 +74,7 @@ class Household:
             Household: deserialized Household instance
         """
 
-        household = cls(
-            data['province'], data['neighborhood'], data_source)
-        household.number_of_persons = data['number_of_persons']
-        household.persons = data['persons']
+        household = cls(data['province'], data['neighborhood'],
+                        data_source, data['persons'], data['number_of_persons'])
+
         return household

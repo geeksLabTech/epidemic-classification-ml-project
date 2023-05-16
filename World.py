@@ -1,3 +1,4 @@
+from responses import start
 from simulation.Person import Person
 from simulation.Household import Household
 from simulation.School import School
@@ -9,9 +10,12 @@ import datetime
 # import pickle
 import numpy as np
 from multiprocessing import Pool
+import multiprocessing
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
+# import time
+from timeit import default_timer as timer
 
 
 class World:
@@ -33,12 +37,42 @@ class World:
     def __init__(self, data_loader: DataLoader):
         """initialization function
         """
+
         self.data_source = data_loader
 
         self.age_groups = np.array(self.data_source.age_groups)
 
         self.total_population = 0
         self.db = MongoCRUD('contact_simulation')
+
+        # multi threaded process to speed up population generation
+        # 16GB RAM dies with 2 threads... use under own responsability
+        # with Pool(n_threads) as p:
+        #     results = []
+        #     results.append(p.map(self.generate_neighborhoods,
+        #                          (data_source.provinces_population), 3))
+
+    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood):
+        adult = [Person(self.data_source, True).serialize()]
+        temp = number_of_people - 1
+        if temp > 0:
+            people = [Person(self.data_source).serialize()
+                      for _ in range(temp)]
+            people_ids = self.db.insert_many(
+                'Person', people+adult).inserted_ids
+        else:
+            people_ids = [self.db.insert_one('Person', adult[0]).inserted_id]
+
+        h = Household(province, neighborhood, self.data_source,
+                      people_ids, number_of_people)
+        return h.serialize()
+
+    def parallel_household_creation(self, people_number_by_household, province, i, return_dict):
+        # print(f'started proccess {i}')
+        r = [self.__create_and_serialize_household(
+            province, people_number_by_household[i][j], i) for j in range(people_number_by_household.shape[1])]
+        return_dict[i] = r
+        # print(f'finished proccess {i}')
 
     def get_age_group(self, age: int):
         interval_index = np.where(
@@ -52,13 +86,19 @@ class World:
 
     def generate_population(self, population_name: str, n_threads: int = 12):
 
+        for i in self.data_source.provinces_population:
+            start_time = timer()
+            self.generate_province(province=i)
+
+            print('Finished in', timer() - start_time)
+
         provinces = []
 
         for i in self.data_source.provinces_population:
             provinces.append(self.generate_province(i, n_threads=n_threads))
 
-        self.db.insert_data("Population", {"population_name": population_name,
-                            "provinces": provinces, "total_population": self.total_population})
+        self.db.insert_one("Population", {"population_name": population_name,
+                                          "provinces": provinces, "total_population": self.total_population})
 
     def generate_province(self, province: str, n_threads: int = 12, verbose=3):
         """generate neigborhoods for a given province
@@ -104,28 +144,58 @@ class World:
 
         # for each type of school's number of schools
         # a school is created and stored
-        sleep(10)
-        for sc_tp in num_of_schools.keys():
-            print(sc_tp)
-            # for _ in range(int(num_of_schools[sc_tp])):
-            # self.build_school((sc_tp, province))
-            print(int(num_of_schools[sc_tp]))
-            with Pool(n_threads) as p:
-                schools[sc_tp] = p.map(self.build_school, [
-                                      (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))])
+        # sleep(10)
+        # for sc_tp in num_of_schools.keys():
+        #     print(sc_tp)
+        #     # for _ in range(int(num_of_schools[sc_tp])):
+        #     # self.build_school((sc_tp, province))
+        #     print(int(num_of_schools[sc_tp]))
+        #     with Pool(n_threads) as p:
+        #         schools[sc_tp] = p.map(self.build_school, [
+        #                               (sc_tp, province) for i in range(int(num_of_schools[sc_tp]))])
 
         print(f"Building {total_neighborhoods}")
         neighborhoods = []
         # the neighborhoods are created
-        neighborhoods_id = []
-        # for i in range(total_neighborhoods):
-        #     neighborhoods_id.append(
-        #         self.build_neighborhood((i, province, schools)))
-        with Pool(n_threads) as p:
-            neighborhoods_id = p.map(self.build_neighborhood, [
-                (i, province, schools) for i in range(total_neighborhoods)])
-        neighborhoods.append(neighborhoods_id)
-        # self.neighborhood_id += 1
+        possible_people_by_household = np.arange(start=1, stop=10, step=1)
+        inhabitants_distribution = np.array(
+            self.data_source.inhabitants_distribution)
+        total_households_by_neighborhoods = int(
+            1000 / (np.argmax(inhabitants_distribution)+1))
+        people_number_by_household = np.random.choice(a=possible_people_by_household,
+                                                      p=inhabitants_distribution,
+                                                      size=(total_neighborhoods, total_households_by_neighborhoods))
+
+        # print(people_number_by_household)
+        # print('aa', np.argmax(inhabitants_distribution))
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        jobs = []
+
+        for i in range(people_number_by_household.shape[0]):
+            p = multiprocessing.Process(target=self.parallel_household_creation, args=(
+                people_number_by_household, province, i, return_dict))
+            jobs.append(p)
+            p.start()
+
+        for proc in jobs:
+            proc.join()
+
+        for key in return_dict:
+            n_id = self.db.insert_one(
+                "Neighborhood", {"neighborhood": return_dict[key]}).inserted_id
+            neighborhoods.append(n_id)
+
+            # if the person is a student, gets assigned to a school
+            # the distribution is assumed uniform to get assigned to a school
+            # given that schools are not located in neighborhoods
+            # if p.study:
+            #     sc = np.random.choice(
+            #         len(schools[province][p.study_details]), 1)[0]
+            #     schools[province][p.study_details][sc].students.append(
+            #         p.id)
+
+        # self.db.insert_one("Province", {province: neighborhoods[province]})
 
         # Find a way to calculate this value
         workplaces_by_province = 0.8
@@ -148,7 +218,7 @@ class World:
         # with open(f"population_data/{province}.pickle", "wb") as f:
         #     pickle.dump(
         #         {"neighborhoods": neighborhoods, "schools": schools}, f)
-        prov_id = self.db.insert_data("Province", {
+        prov_id = self.db.insert_one("Province", {
             province: {
                 "neighborhoods": neighborhoods,
                 "schools": schools,
@@ -158,6 +228,7 @@ class World:
 
         if verbose >= 2:
             print("Finished:", province)
+
         with open("date.txt", 'a') as f:
             f.write(province)
             f.write(str(datetime.datetime.now()))
@@ -168,13 +239,14 @@ class World:
         n_id, province, schools = data
         cont = 0
         neighborhood = []
+
         # cont denotes the number of persons in the current neighborhood
         # while its less than the number of persons per neghborhood
         while cont < self.data_source.neighborhoods_per_thousand_people * 1000:
             # print(
             #     cont, "/", self.data_source.neighborhoods_per_thousand_people * 1000)
             # a household is created
-            h = Household(province, n_id, self.data_source)
+            h = Household(province, n_id, self.data_source, [], None)
             cont += h.number_of_persons
             has_elder = False
             self.total_population += h.number_of_persons
@@ -193,7 +265,7 @@ class World:
                     if p.study:
                         sc = np.random.choice(schools[p.study_details])
 
-                    id = self.db.insert_data(
+                    id = self.db.insert_one(
                         "Person", p.serialize()).inserted_id
                     if sc:
                         self.db.update_one(
@@ -203,11 +275,11 @@ class World:
                         # print(school)
                         # school['students'].append(id)
 
-                    h.persons.append(id)
+                    h.persons_id.append(id)
                     del p
             neighborhood.append(h.serialize())
             del h
-        n_id = self.db.insert_data(
+        n_id = self.db.insert_one(
             "Neighborhood", {"neighborhood": neighborhood}).inserted_id
         return n_id
 
@@ -217,12 +289,12 @@ class World:
             "province": province,
             "school_type": sc_tp,
             "students": []}
-        return self.db.insert_data(
+        return self.db.insert_one(
             "School", school).inserted_id
         # del school
 
     def run_simulation(self, population_name: str, n_days: int = 100):
-        population: dict = self.db.get_data(
+        population: dict = self.db.get_one(
             "Population", {"population_name": population_name})
 
         if population:
@@ -292,8 +364,8 @@ class World:
 
     def insert_pairs(self, day, pairs, population, place, province):
         for p in pairs:
-            p1, p2 = self.db.get_data("People", {"_id": p[0]}), self.db.get_data(
-                "People", {"_id": p[0]}),
+            p1 = self.db.get_one("People", {"_id": p[0]})
+            p2 = self.db.get_one("People", {"_id": p[0]})
 
             contact = {
                 "day": day,
@@ -304,7 +376,7 @@ class World:
                 "province": province
             }
 
-            self.db.insert_data("Contact", contact)
+            self.db.insert_one("Contact", contact)
 
     def generate_contact_matrix(self, population_name: str, province: str = None, place: str = None):
 
@@ -330,7 +402,7 @@ class World:
 
         matrix /= n_days
 
-        total_people = self.db.get_data(
+        total_people = self.db.get_one(
             "Population", {"population_name": population_name})["total_population"]
 
         for i, row in enumerate(matrix):

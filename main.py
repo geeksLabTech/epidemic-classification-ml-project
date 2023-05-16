@@ -8,7 +8,7 @@ with open("date.txt", "w") as f:
 dl = DataLoader()
 w = World(dl)
 
-w.generate_population("CUBA", n_threads=1000)
+w.generate_population("CUBA", n_threads=100)
 w.run_simulation("CUBA")
 w.generate_contact_matrix("CUBA")
 

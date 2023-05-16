@@ -113,16 +113,16 @@ class World:
 
     def generate_population(self, population_name: str, n_threads: int = 12):
 
-        for i in self.data_source.provinces_population:
-            start_time = timer()
-            self.generate_province(province=i)
-
-            print('Finished in', timer() - start_time)
-
         provinces = []
 
         for i in self.data_source.provinces_population:
+            start_time = timer()
+            # self.generate_province(province=i, n_threads=n_threads)
             provinces.append(self.generate_province(i, n_threads=n_threads))
+
+            print('Finished in', timer() - start_time)
+
+        # for i in self.data_source.provinces_population:
 
         self.db.insert_one("Population", {"population_name": population_name,
                                           "provinces": provinces, "total_population": self.total_population})

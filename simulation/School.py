@@ -35,6 +35,7 @@ class School:
 
     @classmethod
     def load_serialized(cls, data: Dict[str, Any]) -> "School":
+        print(data)
         province = data["province"]
         school_type = data["school_type"]
         school = cls(province, school_type)

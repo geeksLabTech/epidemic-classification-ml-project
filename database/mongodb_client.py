@@ -55,7 +55,7 @@ class MongoCRUD:
         # # Retrieve documents based on filter query and projection fields
         # for doc in collection.find(filter_query, projection_fields):
         #     yield doc
-        return collection.find(filter_query, projection_fields)
+        return list(collection.find(filter_query, projection_fields))
         self.client.close()
 
     def get_one(self, collection_name, filter_query={}, projection_fields=None):

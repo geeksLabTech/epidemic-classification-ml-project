@@ -247,7 +247,7 @@ class World:
                                 self.db.get_data("School", {"_id": school}))
 
                             pairs = self.generate_contacts(sc_obj.students, 40)
-                            self.insert_pairs(pairs,  population_name,
+                            self.insert_pairs(day, pairs,  population_name,
                                               str(sc_tp)+' school', province)
 
                     # geenrate contacts in house and store all persons to

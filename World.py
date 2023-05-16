@@ -152,7 +152,7 @@ class World:
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
         # all hosueholds inside a neighborhood
-        neighborhoods[province] = []
+        neighborhoods = []
 
         # according to distribution, number of schools of each type is calculated
 
@@ -206,7 +206,7 @@ class World:
         for key in households_by_neighborhood_dict:
             n_id = self.db.insert_one("Neighborhood", {
                                       "neighborhood": households_by_neighborhood_dict[key]}).inserted_id
-            neighborhoods[province].append(n_id)
+            neighborhoods.append(n_id)
 
         for key in schools:
             if len(schools[key]) == 0:
@@ -244,7 +244,7 @@ class World:
         prov_id = self.db.insert_one("Province", {
             province: {
                 "neighborhoods": neighborhoods,
-                "schools": schools,
+                "schools": dict(schools),
                 "workplaces": workplaces
             }
         }).inserted_id

@@ -8,7 +8,7 @@ import datetime
 dl = DataLoader()
 w = World(dl)
 
-# w.generate_population("CUBA", n_threads=100)
+w.generate_population("CUBA", n_threads=100)
 w.run_simulation("CUBA", 2)
 m = w.generate_contact_matrix("CUBA")
 print(m)

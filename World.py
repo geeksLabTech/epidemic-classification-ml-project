@@ -392,7 +392,7 @@ class World:
 
         n_days = 0
         for c in contacts:
-            print(c)
+            # print(c)
             idx1 = self.get_age_group(c["p1"])
             idx2 = self.get_age_group(c["p2"])
             n_days = max(n_days, c['day'])

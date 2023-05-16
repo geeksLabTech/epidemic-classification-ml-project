@@ -23,7 +23,7 @@ class Household:
 
     """
 
-    def __init__(self, province: str, neighborhood: int, h_id: int, data_source: DataLoader):
+    def __init__(self, province: str, neighborhood: int, data_source: DataLoader):
         """
 
         Args:
@@ -40,7 +40,6 @@ class Household:
 
         # initially persons list is empty, on World creation, the inhabitants will be added
         self.persons = []
-        self.house_id = h_id
         self.province = province
         self.neighborhood = neighborhood
 
@@ -60,8 +59,7 @@ class Household:
             'number_of_persons': int(self.number_of_persons),
             'persons': self.persons,
             'province': self.province,
-            'neighborhood': int(self.neighborhood),
-            'house_id': int(self.house_id)
+            'neighborhood': int(self.neighborhood)
         }
 
     @classmethod
@@ -77,7 +75,7 @@ class Household:
         """
 
         household = cls(
-            data['province'], data['neighborhood'], data['house_id'], data_source)
+            data['province'], data['neighborhood'], data_source)
         household.number_of_persons = data['number_of_persons']
         household.persons = data['persons']
         return household

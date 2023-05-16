@@ -174,8 +174,7 @@ class World:
             # print(
             #     cont, "/", self.data_source.neighborhoods_per_thousand_people * 1000)
             # a household is created
-            h = Household(province, n_id, self.house_id, self.data_source)
-            self.house_id += 1
+            h = Household(province, n_id, self.data_source)
             cont += h.number_of_persons
             has_elder = False
             self.total_population += h.number_of_persons

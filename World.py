@@ -194,14 +194,17 @@ class World:
 
         jobs = []
 
-        for i in range(people_number_by_household.shape[0]):
-            p = multiprocessing.Process(target=self.parallel_household_creation, args=(
-                people_number_by_household, province, i, households_by_neighborhood_dict, schools))
-            jobs.append(p)
-            p.start()
+        i = 0
+        while i < (people_number_by_household.shape[0]):
+            for _ in range(n_threads):
+                p = multiprocessing.Process(target=self.parallel_household_creation, args=(
+                    people_number_by_household, province, i, households_by_neighborhood_dict, schools))
+                jobs.append(p)
+                p.start()
+                i += 1
 
-        for proc in jobs:
-            proc.join()
+            for proc in jobs:
+                proc.join()
 
         for key in households_by_neighborhood_dict:
             n_id = self.db.insert_one("Neighborhood", {

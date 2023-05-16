@@ -104,6 +104,7 @@ class World:
 
         # for each type of school's number of schools
         # a school is created and stored
+        sleep(10)
         for sc_tp in num_of_schools.keys():
             print(sc_tp)
             # for _ in range(int(num_of_schools[sc_tp])):

@@ -15,7 +15,7 @@ class School:
         a list of instances of Person, with all the students in the school
     """
 
-    def __init__(self, province: str, school_type: str):
+    def __init__(self, province: str, school_type: str, students: list = []):
         """
         Args:
             province (str): the province name
@@ -23,7 +23,7 @@ class School:
         """
         self.province = province
         self.school_type = school_type
-        self.students = []
+        self.students = students
 
     def serialize(self) -> str:
         data = {
@@ -35,6 +35,7 @@ class School:
 
     @classmethod
     def load_serialized(cls, data: Dict[str, Any]) -> "School":
+        print(data)
         province = data["province"]
         school_type = data["school_type"]
         school = cls(province, school_type)

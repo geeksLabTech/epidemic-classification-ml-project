@@ -93,7 +93,7 @@
 
   "distribution_of_man_or_woman": [0.486, 0.514],
 
-  "enrollment_distribution": [1952, 9995, 24713, 10440],
+  "enrollment_distribution": [0.04144373673036093, 0.21220806794055203, 0.5246921443736731, 0.22165605095541402],
   "total_enrollment": 47100,
 
   "total_houses": 3721042,

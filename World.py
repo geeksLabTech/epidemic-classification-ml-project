@@ -1,21 +1,19 @@
-
-from simulation.Person import Person
-from simulation.Household import Household
-from simulation.School import School
 from time import sleep
 import datetime
-# from simulation.workplace import Workplace, WorkplaceSize
-# from data_distribution import *
+from timeit import default_timer as timer
+from typing import List
 
-# import pickle
 import numpy as np
 from multiprocessing import Pool
 import multiprocessing
 
+from simulation.Person import Person
+from simulation.Household import Household
+from simulation.School import School
+from simulation.workplace import Workplace, WorkplaceSize
+
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
-# import time
-from timeit import default_timer as timer
 
 
 class World:
@@ -47,7 +45,7 @@ class World:
 
         # multi threaded process to speed up population generation
         # 16GB RAM dies with 2 threads... use under own responsability
-        # with Pool(n_threads) as p:
+        # with Pool(n_processes) as p:
         #     results = []
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
@@ -55,6 +53,7 @@ class World:
     def __create_and_serialize_household(self, province, number_of_people: int, neighborhood, people_by_school_type):
         adult = [Person(self.data_source, True).serialize()]
         temp = number_of_people - 1
+
         if temp > 0:
             people = [Person(self.data_source).serialize()
                       for _ in range(temp)]
@@ -102,6 +101,17 @@ class World:
         # print(f'finished proccess {i}')
 
     def get_age_group(self, age: int):
+        """
+        Get the age group a person belongs to, this is to find the cells in the contact matrix that should be
+        updated
+
+        Args:
+            age (int): Person's age
+
+        Returns:
+            int: index in the age groups matrix
+        """
+
         interval_index = np.where(
             (age >= self.age_groups[:, 0]) & (age <= self.age_groups[:, 1]))[0]
 
@@ -109,16 +119,23 @@ class World:
             interval_index = interval_index[0]
         else:
             interval_index = -1
+
         return interval_index
 
-    def generate_population(self, population_name: str, n_threads: int = 12):
+    def generate_population(self, population_name: str, n_processes: int = 12):
+        """Province by province generate population
 
+        Args:
+            population_name (str): Population name, this will be the name to access
+            the generated population from the DB
+            n_processes (int, optional): Number of concurrent Processes to run. Defaults to 12.
+        """
         provinces = []
 
         for i in self.data_source.provinces_population:
             start_time = timer()
-            # self.generate_province(province=i, n_threads=n_threads)
-            p_id = self.generate_province(i, n_threads=n_threads)
+            # self.generate_province(province=i, n_processes=n_processes)
+            p_id = self.generate_province(i, n_processes=n_processes)
             provinces.append(p_id)
 
             print('Finished in', timer() - start_time)
@@ -128,13 +145,14 @@ class World:
         self.db.insert_one("Population", {"population_name": population_name,
                                           "provinces": provinces, "total_population": self.total_population})
 
-    def generate_province(self, province: str, n_threads: int = 12, verbose=3):
+    def generate_province(self, province: str, n_processes: int = 12, verbose=3):
         """generate neigborhoods for a given province
 
         Args:
             province (str):
                 province name, to access province related data and for taggig
                 the data generated here
+            n_processes (int): number of processes to run concurrently
             verbose (int):
                 integer denoting log level, for debug proposes (default: 0)
         """
@@ -181,13 +199,6 @@ class World:
         households_by_neighborhood_dict = manager.dict()
         schools = manager.dict()
 
-        # schools in province are organized according to school type
-        # schools[province] = {
-        #     'primary': [],
-        #     'secondary': [],
-        #     'pre_univ': [],
-        #     'university': []
-        # }
         schools['primary'] = []
         schools['secondary'] = []
         schools['pre_univ'] = []
@@ -198,7 +209,7 @@ class World:
 
         i = 0
         while i < (people_number_by_household.shape[0]):
-            for _ in range(n_threads):
+            for _ in range(n_processes):
                 if i == people_number_by_household.shape[0]:
                     break
                 p = multiprocessing.Process(target=self.parallel_household_creation, args=(
@@ -225,34 +236,11 @@ class World:
             inserted_schools[key] = self.build_and_save_schools(
                 key, province, students_id_assigned, schools[key])
 
-        # self.db.insert_one("Province", {province: neighborhoods[province]})
-
-        # Find a way to calculate this value
-        workplaces_by_province = 0.8
-
-        # test this code later
-        workplaces = []
-        # total_workers = 0
-        # id = 0
-        # while total_workers < self.data_source.provinces_population[province] * workplaces_by_province:
-        #     temp = np.random.choice([0,1,2,3])
-        #     match temp:
-        #         case 0: size = WorkplaceSize.SMALL
-        #         case 1: size = WorkplaceSize.MEDIUM
-        #         case 2: size = WorkplaceSize.LARGE
-        #         case 3: size = WorkplaceSize.EXTRA_LARGE
-        #     wp = Workplace(id, province, size)
-        #     total_workers += wp.number_of_people
-        #     workplaces[province].append(wp)
-
-        # with open(f"population_data/{province}.pickle", "wb") as f:
-        #     pickle.dump(
-        #         {"neighborhoods": neighborhoods, "schools": schools}, f)
         prov_id = self.db.insert_one("Province", {
             "province_name": province,
             "neighborhoods": neighborhoods,
-            "schools": inserted_schools,
-            "workplaces": workplaces
+            "schools": inserted_schools
+            # "workplaces": workplaces
         }).inserted_id
 
         if verbose >= 2:
@@ -274,42 +262,59 @@ class World:
         # print('len(schools_to_insert)', len(schools_to_insert))
         return self.db.insert_many("School", schools_to_insert).inserted_ids
 
-    def run_simulation(self, population_name: str, n_days: int = 2, n_threads=12):
+    def run_simulation(self, population_name: str, n_days: int = 2, n_processes=12):
+        """Code to run simulation, it gets the contacts based on some pre-stablished rules
+
+        Args:
+            population_name (str): name of the population to simulate, it will load the simulation from DB
+            n_days (int, optional): number of days to simmulate, the more days more accurate should be. Defaults to 2.
+            n_processes (int, optional): number of processes to concurrenlty run. Defaults to 12.
+        """
         population: dict = self.db.get_one(
             "Population", {"population_name": population_name})
 
         if population:
             provinces = population['provinces']
-            # print(provinces)
+
             # each day will be divided in 3 possible contact moments
             # 1: At Work/School (contacts related to the workplace and school representing the day for the people in the population)
             # 2: In the neighborhood (contacts in the neighborhood, in this step is assumed contact between friends)
             # 3: In House conttacts (family members)
+
             for day in range(1, n_days):
                 jobs = []
                 cont = 0
 
                 print(f"Day: {day}")
-                
+
                 while cont < len(provinces):
-                    for _ in range(n_threads):
+                    for _ in range(n_processes):
                         if cont == len(provinces):
                             break
                         p = multiprocessing.Process(
                             target=self.province_execution, args=(population_name, day, provinces[cont]))
                         jobs.append(p)
                         p.start()
-                        i += 1
+                        cont += 1
 
                     for proc in jobs:
                         proc.join()
 
-    def province_execution(self, population_name, day, p):
+    def province_execution(self, population_name: str, day: int, p: str):
+        """Iterates over all institutions in a province and generates contacts between the people 
+        Contacts are stored in Collection "Contact" in DB
+
+        Args:
+            population_name (str): population name to load population from db
+            day (int): day of simulation, for more details in contacts
+            p (str): province id
+        """
         province = self.db.get_one("Province", {"_id": p})
-        # print(province)
-        #     # TODO: to be implemented
-        #     for workplace in province['workplaces']:
-        #         pass
+
+        if 'workplaces' in province:
+            for workplace in province['workplaces']:
+                pass
+
         if 'schools' in province:
             for sc_tp in province['schools']:
                 # print(province['schools'][sc_tp])
@@ -322,6 +327,7 @@ class World:
                         sc_obj.students, 40)
                     self.insert_pairs(day, pairs,  population_name,
                                       str(sc_tp)+' school', province)
+
         # geenrate contacts in house and store all persons to
         # generate neighborhood contacts
         if 'neighborhoods' in province:
@@ -347,6 +353,15 @@ class World:
                     day, pairs, population_name, "neighborhood", province)
 
     def generate_contacts(self, persons: list, n_contacts: int):  # -> list(tuple(int,int))
+        """generate a list of pairs with the ids of people that had contact
+
+        Args:
+            persons (list): list of ids of persons to interact
+            n_contacts (int): approx ammount of contacts expected to happen between the people 
+
+        Returns:
+            list(tuple(str,str)): list of tuples with the ids of both persons that interacted
+        """
 
         if len(persons) < 2:
             return []
@@ -373,7 +388,17 @@ class World:
 
         return pairs
 
-    def insert_pairs(self, day, pairs, population, place, province):
+    def insert_pairs(self, day: int, pairs: List, population: str, place: str, province: str):
+        """insert a formatted dictionary with relevant info about the contact between two 
+        persons
+
+        Args:
+            day (int): day of simmulation on which occurs the contact
+            pairs (List(tuples(str,str))): list with all pairs of persons interacting between each other
+            population (str): population name to access db
+            place (str): string deoting type of place in which contact occurred
+            province (str): province id to access db
+        """
 
         for p in pairs:
             p1 = self.db.get_one("Person", {"_id": p[0]})
@@ -390,7 +415,16 @@ class World:
             self.db.insert_one("Contact", contact)
 
     def generate_contact_matrix(self, population_name: str, province: str = None, place: str = None):
+        """Generate 
 
+        Args:
+            population_name (str): _description_
+            province (str, optional): _description_. Defaults to None.
+            place (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         filt = {"population_name": population_name}
         if province:
             filt['province'] = province

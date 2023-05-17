@@ -244,8 +244,6 @@ class World:
                 num_of_schools['primary']), size=len(schools[key]))
             inserted_schools[key] = self.build_and_save_schools(
                 key, province, students_id_assigned, schools[key])
-
-        # self.db.insert_one("Province", {province: neighborhoods[province]})
         
         works_by_people = np.random.choice(a=[0,1,2,3], size=len(people_that_work))
         people_mask = np.zeros(len(works_by_people))
@@ -271,18 +269,15 @@ class World:
                     people_mask[i] = 1
             
             wp = Workplace(province=province, size=size, people_ids=assigned_people)
-            wp_id = self.db.insert_one(wp.serialize()).inserted_id
+            wp_id = self.db.insert_one('Workplace', wp.serialize()).inserted_id
             total_workers += len(assigned_people)
             workplaces.append(wp_id)
 
-        # with open(f"population_data/{province}.pickle", "wb") as f:
-        #     pickle.dump(
-        #         {"neighborhoods": neighborhoods, "schools": schools}, f)
         prov_id = self.db.insert_one("Province", {
             "province_name": province,
             "neighborhoods": neighborhoods,
-            "schools": inserted_schools
-            # "workplaces": workplaces
+            "schools": inserted_schools,
+            "workplaces": workplaces
         }).inserted_id
 
         if verbose >= 2:

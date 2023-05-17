@@ -18,9 +18,6 @@ class Workplace:
         self.size = size
         self.people_ids = people_ids
 
-        if number_of_people is None:
-            self.__assign_people_by_size()
-
     def serialize(self):
         """serialize object
 

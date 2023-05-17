@@ -4,7 +4,7 @@ from simulation.Household import Household
 from simulation.School import School
 from time import sleep
 import datetime
-# from simulation.workplace import Workplace, WorkplaceSize
+from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 
 # import pickle
@@ -52,7 +52,7 @@ class World:
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
 
-    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood, people_by_school_type):
+    def __create_and_serialize_household(self, province, number_of_people: int, neighborhood, people_by_school_type, people_that_work: list):
         adult = [Person(self.data_source, True).serialize()]
         temp = number_of_people - 1
         if temp > 0:
@@ -61,6 +61,8 @@ class World:
             people_ids = self.db.insert_many(
                 'Person', people+adult).inserted_ids
             for i in range(len(people)):
+                if 'work' in people[i] == True:
+                    people_that_work.append(people_ids[i])
                 if 'study_details' in people[i]:
                     if not people[i]['study_details'] in people_by_school_type:
                         people_by_school_type[people[i]['study_details']] = []
@@ -69,6 +71,8 @@ class World:
                     # print('entro', people_by_school_type)
         else:
             people_ids = [self.db.insert_one('Person', adult[0]).inserted_id]
+            if 'work' in adult[0] == True:
+                    people_that_work.append(people_ids[0])
             if 'study_details' in adult[0]:
                 if not adult[0]['study_details'] in people_by_school_type:
                     people_by_school_type[adult[0]['study_details']] = []
@@ -79,22 +83,24 @@ class World:
         # print(len(people_by_school_type['primary']), len(people_by_school_type['secondary']), len(people_by_school_type['pre_univ']), len(people_by_school_type['university']))
         h = Household(province, neighborhood, self.data_source,
                       people_ids, number_of_people)
-        return h.serialize(), people_by_school_type
+        return h.serialize(), people_by_school_type, people_that_work
 
-    def parallel_household_creation(self, people_number_by_household, province, i, household_by_neighborhood: dict, people_by_school_type: dict):
+    def parallel_household_creation(self, people_number_by_household, province, i, household_by_neighborhood: dict, people_by_school_type: dict, people_that_work: list):
         # print(f'started proccess {i}')
         households = []
-        temp = {
+        
+        for j in range(people_number_by_household.shape[1]):
+            temp = {
             'primary': [],
             'secondary': [],
             'pre_univ': [],
             'university': []
-        }
-        for j in range(people_number_by_household.shape[1]):
-            h = self.__create_and_serialize_household(
-                province, people_number_by_household[i][j], i, temp)
+            }
+            h, temp, people_that_work_to_add = self.__create_and_serialize_household(
+                province, people_number_by_household[i][j], i, temp, [])
             households.append(h)
             people_by_school_type.update(temp)
+            people_that_work.extend(people_that_work_to_add)
             # for sc_tp in new_people_by_school_type[province]:
             #     people_by_school_type[province][sc_tp].extend(new_people_by_school_type[province][sc_tp])
 
@@ -180,6 +186,7 @@ class World:
         manager = multiprocessing.Manager()
         households_by_neighborhood_dict = manager.dict()
         schools = manager.dict()
+        people_that_work = manager.list()
 
         # schools in province are organized according to school type
         # schools[province] = {
@@ -202,7 +209,7 @@ class World:
                 if i == people_number_by_household.shape[0]:
                     break
                 p = multiprocessing.Process(target=self.parallel_household_creation, args=(
-                    people_number_by_household, province, i, households_by_neighborhood_dict, schools))
+                    people_number_by_household, province, i, households_by_neighborhood_dict, schools, people_that_work))
                 jobs.append(p)
                 p.start()
                 i += 1
@@ -226,24 +233,34 @@ class World:
                 key, province, students_id_assigned, schools[key])
 
         # self.db.insert_one("Province", {province: neighborhoods[province]})
+        
+        works_by_people = np.random.choice(a=[0,1,2,3], size=len(people_that_work))
+        people_mask = np.zeros(len(works_by_people))
+        total_workers = 0
 
         # Find a way to calculate this value
         workplaces_by_province = 0.8
 
         # test this code later
         workplaces = []
-        # total_workers = 0
-        # id = 0
-        # while total_workers < self.data_source.provinces_population[province] * workplaces_by_province:
-        #     temp = np.random.choice([0,1,2,3])
-        #     match temp:
-        #         case 0: size = WorkplaceSize.SMALL
-        #         case 1: size = WorkplaceSize.MEDIUM
-        #         case 2: size = WorkplaceSize.LARGE
-        #         case 3: size = WorkplaceSize.EXTRA_LARGE
-        #     wp = Workplace(id, province, size)
-        #     total_workers += wp.number_of_people
-        #     workplaces[province].append(wp)
+        while total_workers < len(people_that_work):
+            temp = np.random.choice([0,1,2,3])
+            match temp:
+                case 0: size = WorkplaceSize.SMALL
+                case 1: size = WorkplaceSize.MEDIUM
+                case 2: size = WorkplaceSize.LARGE
+                case 3: size = WorkplaceSize.EXTRA_LARGE
+            
+            assigned_people = []
+            for i in range(len(works_by_people)):
+                if people_mask[i] == 0 and works_by_people[i] == temp :
+                    assigned_people.append(people_that_work[i])
+                    people_mask[i] = 1
+            
+            wp = Workplace(province=province, size=size, people_ids=assigned_people)
+            wp_id = self.db.insert_one(wp.serialize()).inserted_id
+            total_workers += len(assigned_people)
+            workplaces.append(wp_id)
 
         # with open(f"population_data/{province}.pickle", "wb") as f:
         #     pickle.dump(
@@ -260,6 +277,7 @@ class World:
 
         return prov_id
 
+
     def build_and_save_schools(self, school_type: str, province: str, students_id_assigned, students_id: list):
         splitted_students_by_school = {}
         # print('len(students_id_assigned)', len(students_id_assigned))
@@ -273,6 +291,7 @@ class World:
         ) for key in splitted_students_by_school]
         # print('len(schools_to_insert)', len(schools_to_insert))
         return self.db.insert_many("School", schools_to_insert).inserted_ids
+
 
     def run_simulation(self, population_name: str, n_days: int = 2, n_threads=12):
         population: dict = self.db.get_one(

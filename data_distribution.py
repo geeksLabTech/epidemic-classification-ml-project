@@ -111,8 +111,8 @@ distribution_of_man_or_woman = [0.486, 0.496, 1-(0.496+0.486)]
 
 # level of study, the first position represents elementary school or less, the second secondary school,
 # the third high school and the last higher education.
-enrollment_distribution = [1952, 9995, 24713, 10440]
 total_enrollment = 47100
+enrollment_distribution = [x/total_enrollment for x in [1952, 9995, 24713, 10440]]
 
 age_groups = [
     [0, 4], [5, 9], [10, 14], [15, 19], [20, 24], [25, 29], [30, 34], [

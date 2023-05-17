@@ -13,12 +13,11 @@ class WorkplaceSize(Enum):
 
 
 class Workplace:
-    def __init__(self, province: str, size: WorkplaceSize, people_ids: List, number_of_people: int | None = None):
+    def __init__(self, province: str, size: WorkplaceSize, people_ids: List):
         self.province = province
-        self.size = size,
+        self.size = size
         self.people_ids = people_ids
-        # self.economic_activity = economic_activity
-        self.number_of_people = number_of_people
+
         if number_of_people is None:
             self.__assign_people_by_size()
 
@@ -31,7 +30,6 @@ class Workplace:
         return {
             'province': self.province,
             'size': str(self.size),
-            'number_of_people': self.number_of_people,
             'people_ids': self.people_ids
         }
 

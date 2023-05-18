@@ -1,8 +1,9 @@
 from pymongo import MongoClient
 import random
 class Node:
-    def __init__(self, name):
-        self.name = name      
+    def __init__(self, name,type):
+        self.name = name
+        self.type = type     
    
 class Graph:
     def __init__(self):
@@ -33,13 +34,25 @@ def create_neighborhood(data, graph):
     # print(document)
         for neighborhoods in document["neighborhood"]:
             for i in range(len(neighborhoods)) - 1:
-                graph.add_edge(Node(neighborhoods[i]["neighborhoods"]), Node(neighborhoods[i + 1]["neighborhoods"]))
-                graph.add_edge(Node(neighborhoods[i + 1]["neighborhoods"]), Node(neighborhoods[i]["neighborhoods"]))
+                graph.add_edge(Node(neighborhoods[i]["neighborhoods"], "H"), Node(neighborhoods[i + 1]["neighborhoods"],"H"))
+                graph.add_edge(Node(neighborhoods[i + 1]["neighborhoods"],"H"), Node(neighborhoods[i]["neighborhoods"],"H"))
             for i in range(5):
                 random_node1 = random.choice(list(graph.nodes.keys()))
                 random_node2 = random.choice(list(graph.nodes.keys()))
                 graph.add_edge(random_node1, random_node2)
                 graph.add_edge(random_node2, random_node1)
         
+def create_school(school_Collection,neighborhood_Collection,people_Collection,graph):
+    for school in school_Collection.find():
+        graph.add_node(Node(school["id"],"S"))
+        for students in school["students"]:
+            for document in neighborhood_Collection.find():
+                for neighborhoods in document["neighbordood"]:
+                    for person in neighborhoods:
+                        if person["id"] == students:
+                            graph.add_edge(Node(school["id"],"S"), Node(person["id"],"H"))
+                            graph.add_edge(Node(person["id"],"H"), Node(school["id"],"S"))
+
+
 
             

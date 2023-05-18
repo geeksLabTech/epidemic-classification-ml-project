@@ -23,11 +23,11 @@ def build_graph():
     neighborhood_Collection = db["Neighborhood"]
     school_Collection = db["School"]
     work_Collection = db["Work"]
-    people_Collection = db["People"]
+    # people_Collection = db["People"]
     create_neighborhood( neighborhood_Collection,graph)
-    create_school(school_Collection,neighborhood_Collection,people_Collection,graph)
-     
-
+    create_school(school_Collection,neighborhood_Collection,graph)
+    create_work(work_Collection,neighborhood_Collection,graph)
+    
 
 def create_neighborhood(data, graph):
     for document in data.find():
@@ -42,7 +42,7 @@ def create_neighborhood(data, graph):
                 graph.add_edge(random_node1, random_node2)
                 graph.add_edge(random_node2, random_node1)
         
-def create_school(school_Collection,neighborhood_Collection,people_Collection,graph):
+def create_school(school_Collection,neighborhood_Collection,graph):
     for school in school_Collection.find():
         graph.add_node(Node(school["id"],"S"))
         for students in school["students"]:
@@ -53,6 +53,15 @@ def create_school(school_Collection,neighborhood_Collection,people_Collection,gr
                             graph.add_edge(Node(school["id"],"S"), Node(person["id"],"H"))
                             graph.add_edge(Node(person["id"],"H"), Node(school["id"],"S"))
 
-
+def create_work(work_Collection,neighborhood_Collection,graph):
+    for work in work_Collection.find():
+        graph.add_node(Node(work["id"],"W"))
+        for workers in work["workers"]:
+            for document in neighborhood_Collection.find():
+                for neighborhoods in document["neighbordood"]:
+                    for person in neighborhoods:
+                        if person["id"] == workers:
+                            graph.add_edge(Node(work["id"],"W"), Node(person["id"],"H"))
+                            graph.add_edge(Node(person["id"],"H"), Node(work["id"],"W"))
 
             

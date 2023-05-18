@@ -217,6 +217,7 @@ class World:
         jobs = []
 
         i = 0
+        context = multiprocessing.get_context('fork')
         while i < (people_number_by_household.shape[0]):
             for _ in range(n_processes):
                 if i == people_number_by_household.shape[0]:

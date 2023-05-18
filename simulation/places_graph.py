@@ -27,7 +27,7 @@ def build_graph():
     create_neighborhood( neighborhood_Collection,graph)
     create_school(school_Collection,neighborhood_Collection,graph)
     create_work(work_Collection,neighborhood_Collection,graph)
-    
+    create_random_nodes(graph)
 
 def create_neighborhood(data, graph):
     for document in data.find():
@@ -64,4 +64,9 @@ def create_work(work_Collection,neighborhood_Collection,graph):
                             graph.add_edge(Node(work["id"],"W"), Node(person["id"],"H"))
                             graph.add_edge(Node(person["id"],"H"), Node(work["id"],"W"))
 
-            
+def createrandom_nodes(graph):
+    for i in range(1000):
+        random_node1 = random.choice(list(graph.nodes.keys()))
+        random_node2 = random.choice(list(graph.nodes.keys()))
+        graph.add_edge(random_node1, random_node2)
+        graph.add_edge(random_node2, random_node1) 

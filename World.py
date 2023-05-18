@@ -223,7 +223,7 @@ class World:
                 if i == people_number_by_household.shape[0]:
                     break
                 i += 1
-                p = multiprocessing.Process(target=self.parallel_household_creation, args=(
+                p = context.Process(target=self.parallel_household_creation, args=(
                     people_number_by_household, province, i, households_by_neighborhood_dict, schools, people_that_work))
                 jobs.append(p)
                 p.start()

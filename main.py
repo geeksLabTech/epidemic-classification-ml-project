@@ -11,7 +11,7 @@ def main():
     w = World(dl)
 
     print("Generating Population")
-    w.generate_population("CUBA", n_processes=2)
+    w.generate_population("CUBA", n_processes=40)
 
     print("Done!, Simmulating days now...")
 
@@ -23,6 +23,7 @@ def main():
     df = pd.DataFrame(m, columns=labels)
 
     df.to_csv("matrix.csv")
+
 
 if __name__ == '__main__':
     main()

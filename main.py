@@ -8,8 +8,8 @@ from data_loader import DataLoader
 dl = DataLoader()
 w = World(dl)
 
-print("Generating Population")
-w.generate_population("CUBA", n_processes=16)
+# print("Generating Population")
+# w.generate_population("CUBA", n_processes=16)
 
 print("Done!, Simmulating days now...")
 

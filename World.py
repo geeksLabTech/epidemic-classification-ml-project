@@ -73,7 +73,7 @@ class World:
         else:
             people_ids = [self.db.insert_one('Person', adult[0]).inserted_id]
             if 'work' in adult[0] == True:
-                    people_that_work.append(people_ids[0])
+                people_that_work.append(people_ids[0])
             if 'study_details' in adult[0]:
                 if not adult[0]['study_details'] in people_by_school_type:
                     people_by_school_type[adult[0]['study_details']] = []
@@ -89,13 +89,13 @@ class World:
     def parallel_household_creation(self, people_number_by_household, province, i, household_by_neighborhood: dict, people_by_school_type: dict, people_that_work: list):
         # print(f'started proccess {i}')
         households = []
-        
+
         for j in range(people_number_by_household.shape[1]):
             temp = {
-            'primary': [],
-            'secondary': [],
-            'pre_univ': [],
-            'university': []
+                'primary': [],
+                'secondary': [],
+                'pre_univ': [],
+                'university': []
             }
             h, temp, people_that_work_to_add = self.__create_and_serialize_household(
                 province, people_number_by_household[i][j], i, temp, [])
@@ -221,11 +221,11 @@ class World:
             for _ in range(n_processes):
                 if i == people_number_by_household.shape[0]:
                     break
+                i += 1
                 p = multiprocessing.Process(target=self.parallel_household_creation, args=(
                     people_number_by_household, province, i, households_by_neighborhood_dict, schools, people_that_work))
                 jobs.append(p)
                 p.start()
-                i += 1
 
             for proc in jobs:
                 proc.join()
@@ -244,8 +244,9 @@ class World:
                 num_of_schools['primary']), size=len(schools[key]))
             inserted_schools[key] = self.build_and_save_schools(
                 key, province, students_id_assigned, schools[key])
-        
-        works_by_people = np.random.choice(a=[0,1,2,3], size=len(people_that_work))
+
+        works_by_people = np.random.choice(
+            a=[0, 1, 2, 3], size=len(people_that_work))
         people_mask = np.zeros(len(works_by_people))
         total_workers = 0
 
@@ -255,20 +256,21 @@ class World:
         # test this code later
         workplaces = []
         while total_workers < len(people_that_work):
-            temp = np.random.choice([0,1,2,3])
+            temp = np.random.choice([0, 1, 2, 3])
             match temp:
                 case 0: size = WorkplaceSize.SMALL
                 case 1: size = WorkplaceSize.MEDIUM
                 case 2: size = WorkplaceSize.LARGE
                 case 3: size = WorkplaceSize.EXTRA_LARGE
-            
+
             assigned_people = []
             for i in range(len(works_by_people)):
-                if people_mask[i] == 0 and works_by_people[i] == temp :
+                if people_mask[i] == 0 and works_by_people[i] == temp:
                     assigned_people.append(people_that_work[i])
                     people_mask[i] = 1
-            
-            wp = Workplace(province=province, size=size, people_ids=assigned_people)
+
+            wp = Workplace(province=province, size=size,
+                           people_ids=assigned_people)
             wp_id = self.db.insert_one('Workplace', wp.serialize()).inserted_id
             total_workers += len(assigned_people)
             workplaces.append(wp_id)
@@ -284,7 +286,6 @@ class World:
             print("Finished:", province)
 
         return prov_id
-
 
     def build_and_save_schools(self, school_type: str, province: str, students_id_assigned, students_id: list):
         splitted_students_by_school = {}

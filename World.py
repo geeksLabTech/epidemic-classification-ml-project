@@ -3,7 +3,7 @@ import datetime
 from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 from timeit import default_timer as timer
-from typing import List, Literal
+from typing import List, Literal, Any
 
 import numpy as np
 from multiprocessing import Pool
@@ -350,8 +350,20 @@ class World:
         province = self.db.get_one("Province", {"_id": p})
 
         if 'workplaces' in province:
-            for workplace in province['workplaces']:
-                pass
+            for workplace_id in province['workplaces']:
+                workplace_dict: dict[str, Any] = self.db.get_one('Workplace',
+                                                                 {'_id': workplace_id})
+                workplace = Workplace.load_serialized(workplace_dict)
+
+                pairs=self.generate_contacts(
+                    workplace.workers_ids,
+                    np.random.randint(0,workplace.number_of_people))
+
+                self.insert_pairs(day,
+                                  pairs,
+                                  population_name,
+                                  str(workplace_id)+' workplace',
+                                  province)
 
         if 'schools' in province:
             for sc_tp in province['schools']:

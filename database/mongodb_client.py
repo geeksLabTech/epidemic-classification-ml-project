@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-
+from typing import Any
 
 class MongoCRUD:
     def __init__(self, database_name):
@@ -53,7 +53,7 @@ class MongoCRUD:
         #     yield doc
         return list(collection.find(filter_query, projection_fields))
 
-    def get_one(self, collection_name, filter_query={}, projection_fields=None):
+    def get_one(self, collection_name, filter_query={}, projection_fields=None)-> Any:
         """
         Retrieve documents from a MongoDB collection based on a filter query and projection fields.
 

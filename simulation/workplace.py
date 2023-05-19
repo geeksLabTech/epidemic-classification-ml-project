@@ -1,7 +1,7 @@
 
 
 from enum import Enum
-from typing import List
+from typing import List, Dict, Any
 import numpy as np
 
 
@@ -17,15 +17,15 @@ class Workplace:
         self.province = province
         self.size_type = size
 
-        self.people_ids = [] 
+        self.workers_ids = [] 
         self.number_of_people=0
         self.__assign_people_by_size()
 
     def fill_with_people(self, people_ids: List):
-        assert len(self.people_ids)+len(people_ids)>self.number_of_people,\
+        assert len(self.workers_ids)+len(people_ids)>self.number_of_people,\
             f'se esta asignando demasiada gente a un centro de trabajo de tipo {self.size_type}'
 
-        self.people_ids += people_ids
+        self.workers_ids += people_ids
 
     def serialize(self):
         """serialize object
@@ -36,8 +36,17 @@ class Workplace:
         return {
             'province': self.province,
             'size_type': self.size_type.value,
-            'people_ids': self.people_ids
+            'workers_ids': self.workers_ids
         }
+
+    @classmethod
+    def load_serialized(cls, data: Dict[str, Any]) -> "Workplace":
+        province: str = data["province"]
+        size_type: int = data["school_type"]
+        workplace: Workplace = cls(province, WorkplaceSize(size_type))
+        workplace.workers_ids = data['workers_ids']
+        workplace.number_of_people = len(workplace.workers_ids)
+        return workplace 
 
     def __assign_people_by_size(self):
         match self.size_type:

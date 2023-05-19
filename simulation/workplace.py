@@ -13,10 +13,19 @@ class WorkplaceSize(Enum):
 
 
 class Workplace:
-    def __init__(self, province: str, size: WorkplaceSize, people_ids: List):
+    def __init__(self, province: str, size: WorkplaceSize,):
         self.province = province
-        self.size = size
-        self.people_ids = people_ids
+        self.size_type = size
+
+        self.people_ids = [] 
+        self.number_of_people=0
+        self.__assign_people_by_size()
+
+    def fill_with_people(self, people_ids: List):
+        assert len(self.people_ids)+len(people_ids)>self.number_of_people,\
+            f'se esta asignando demasiada gente a un centro de trabajo de tipo {self.size_type}'
+
+        self.people_ids += people_ids
 
     def serialize(self):
         """serialize object
@@ -26,12 +35,12 @@ class Workplace:
         """
         return {
             'province': self.province,
-            'size': str(self.size),
+            'size_type': self.size_type.value,
             'people_ids': self.people_ids
         }
 
     def __assign_people_by_size(self):
-        match self.size:
+        match self.size_type:
             case WorkplaceSize.SMALL:
                 self.number_of_people = np.random.randint(1, 10)
             case WorkplaceSize.MEDIUM:

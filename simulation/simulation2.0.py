@@ -12,14 +12,14 @@ def run_step_of_simulation(matrix = None):
     db = myclient["contact_simulation"]
     population_Collection = db["Person"]
     for document in population_Collection.find():
-        move = build_move_distribution(document["last_position"],document["actual_position"],document["age"],document["work"],document["school"])
+        move = build_move_distribution(document["last_position"],document["actual_position"],document["age"],document["work"],document["school"],graph)
         node_list[move].visitors.append(document["id"])
     return get_contact_matrix(graph,population_Collection,matrix)
 
 
 
 
-def build_move_distribution(last_position,actual_position,age,work,school):
+def build_move_distribution(last_position,actual_position,age,work,school,graph):
     pass
 
 
@@ -28,7 +28,7 @@ def get_contact_matrix(graph,population,matrix):
     for node in graph.nodes:
         if not node.type == "H":
             number_contact = len(node.visitors)/3
-            contact = random.sample(node.visitors,int(number_contact))
+            contact = random.sample(node.visitors,int(number_contact)) #TODO Poison distribution
             row = population.find({"id ":str(node.name)})
             column = population.find({"id ":node.visitors[contact].name})
             matrix[row,column] += 1

@@ -1,9 +1,10 @@
 from pymongo import MongoClient
 import random
 class Node:
-    def __init__(self, name,type):
+    def __init__(self, name,type, visitors = []):
         self.name = name
-        self.type = type     
+        self.type = type  
+        self.visitors = visitors 
    
 class Graph:
     def __init__(self):
@@ -28,6 +29,7 @@ def build_graph():
     create_school(school_Collection,neighborhood_Collection,graph)
     create_work(work_Collection,neighborhood_Collection,graph)
     create_random_nodes(graph)
+    return graph
 
 def create_neighborhood(data, graph):
     for document in data.find():
@@ -64,7 +66,7 @@ def create_work(work_Collection,neighborhood_Collection,graph):
                             graph.add_edge(Node(work["id"],"W"), Node(person["id"],"H"))
                             graph.add_edge(Node(person["id"],"H"), Node(work["id"],"W"))
 
-def createrandom_nodes(graph):
+def create_random_nodes(graph):
     for i in range(1000):
         random_node1 = random.choice(list(graph.nodes.keys()))
         random_node2 = random.choice(list(graph.nodes.keys()))

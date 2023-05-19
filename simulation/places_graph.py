@@ -28,7 +28,8 @@ def build_graph():
     create_neighborhood( neighborhood_Collection,graph)
     create_school(school_Collection,neighborhood_Collection,graph)
     create_work(work_Collection,neighborhood_Collection,graph)
-    create_random_nodes(graph)
+    create_random_entertainment_places(graph)
+    create_random_edges(graph)
     return graph
 
 def create_neighborhood(data, graph):
@@ -66,9 +67,19 @@ def create_work(work_Collection,neighborhood_Collection,graph):
                             graph.add_edge(Node(work["id"],"W"), Node(person["id"],"H"))
                             graph.add_edge(Node(person["id"],"H"), Node(work["id"],"W"))
 
-def create_random_nodes(graph):
+def create_random_edges(graph):
     for i in range(1000):
         random_node1 = random.choice(list(graph.nodes.keys()))
         random_node2 = random.choice(list(graph.nodes.keys()))
         graph.add_edge(random_node1, random_node2)
         graph.add_edge(random_node2, random_node1) 
+
+def create_random_entertainment_places(graph):
+    for i in range(1000):
+        new_place = Node(i,"E")
+        graph.add_node(new_place)
+        random_node = random.choice(list(graph.nodes.keys()))
+        graph.add_edge(random_node, new_place)
+        graph.add_edge(new_place, random_node)
+    
+        

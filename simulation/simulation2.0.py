@@ -37,6 +37,7 @@ def get_contact_matrix(graph,population,matrix):
                 row = population.find({"id ":str(node.name)})
                 column = population.find({"id ":node.visitors[i].name})
                 matrix[row,column] += 1 
+    return matrix
     
 
                  

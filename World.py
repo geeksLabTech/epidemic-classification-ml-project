@@ -3,7 +3,7 @@ import datetime
 from simulation.workplace import Workplace, WorkplaceSize
 # from data_distribution import *
 from timeit import default_timer as timer
-from typing import List
+from typing import List, Literal, Any
 
 import numpy as np
 from multiprocessing import Pool
@@ -257,21 +257,19 @@ class World:
         # test this code later
         workplaces = []
         while total_workers < len(people_that_work):
-            temp = np.random.choice([0, 1, 2, 3])
-            match temp:
-                case 0: size = WorkplaceSize.SMALL
-                case 1: size = WorkplaceSize.MEDIUM
-                case 2: size = WorkplaceSize.LARGE
-                case 3: size = WorkplaceSize.EXTRA_LARGE
+            temp: Literal[0,1,2,3] = np.random.choice([0, 1, 2, 3])
+            wp = Workplace(province=province, size=WorkplaceSize(temp))
 
             assigned_people = []
             for i in range(len(works_by_people)):
                 if people_mask[i] == 0 and works_by_people[i] == temp:
                     assigned_people.append(people_that_work[i])
                     people_mask[i] = 1
+                    if wp.number_of_people == len(assigned_people):
+                        # salir del ciclo si ya se lleno el centro de trabajo
+                        break
+            wp.fill_with_people(assigned_people)
 
-            wp = Workplace(province=province, size=size,
-                           people_ids=assigned_people)
             wp_id = self.db.insert_one('Workplace', wp.serialize()).inserted_id
             total_workers += len(assigned_people)
             workplaces.append(wp_id)
@@ -352,8 +350,20 @@ class World:
         province = self.db.get_one("Province", {"_id": p})
 
         if 'workplaces' in province:
-            for workplace in province['workplaces']:
-                pass
+            for workplace_id in province['workplaces']:
+                workplace_dict: dict[str, Any] = self.db.get_one('Workplace',
+                                                                 {'_id': workplace_id})
+                workplace = Workplace.load_serialized(workplace_dict)
+
+                pairs=self.generate_contacts(
+                    workplace.workers_ids,
+                    np.random.randint(0,workplace.number_of_people))
+
+                self.insert_pairs(day,
+                                  pairs,
+                                  population_name,
+                                  str(workplace_id)+' workplace',
+                                  province)
 
         if 'schools' in province:
             for sc_tp in province['schools']:
@@ -378,7 +388,7 @@ class World:
 
                 for house in neighborhood:
                     # print(house)
-                    if not 'persons' in house:
+                    if 'persons' not in house:
                         continue
                     persons.append(house['persons'])
                     pairs = self.generate_contacts(

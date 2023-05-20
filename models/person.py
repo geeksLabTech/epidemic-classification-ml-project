@@ -5,7 +5,7 @@ from odmantic import AIOEngine, Model, Reference
 from models.data_source import DataSource
 from models.household import Household
 
-from models.school import School, create_null_school
+from models.school import School
 from models.workplace import Workplace, WorkplaceFactory
 
 import numpy as np

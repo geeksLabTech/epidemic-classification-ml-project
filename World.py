@@ -28,17 +28,20 @@ from database.mongodb_client import MongoCRUD
 from odmantic import SyncEngine
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
-def create_people_by_household(data_source: DataSource, household: Household, schools: dict[str, list[School]]) -> list[Person]:
-        # First guarantee that there is at least one adult in the household
-        people = [PersonFactory.create(data_source, household, schools, True)]
-        temp = household.number_of_people - 1
-        
-        if temp > 0:
-            people.extend([PersonFactory.create(data_source, household, schools) for i in range(temp)])
 
-        # db = SyncEngine(database='contact_simulation')
-        # db.save_all(people)
-        return people
+# -> list[Person]:
+def create_people_by_household(data_source: DataSource, household: Household, schools: dict[str, list[School]]):
+    # First guarantee that there is at least one adult in the household
+    people = [PersonFactory.create(data_source, household, schools, True)]
+    temp = household.number_of_people - 1
+
+    if temp > 0:
+        people.extend([PersonFactory.create(
+            data_source, household, schools) for i in range(temp)])
+
+    # db = SyncEngine(database='contact_simulation')
+    # db.save_all(people)
+    return people
 
 
 class World:
@@ -75,7 +78,6 @@ class World:
         #     results = []
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
-    
 
     def get_age_group(self, age: int):
         """
@@ -112,8 +114,8 @@ class World:
         for i in self.data_source.provinces_population:
             start_time = timer()
             # self.generate_province(province=i, n_processes=n_processes)
-            p_id = self.generate_province(i, n_processes=n_processes)
-            provinces.append(p_id)
+            self.generate_province(i, n_processes=n_processes)
+            # provinces.append(p_id)
 
             print('Finished in', timer() - start_time)
 
@@ -152,16 +154,21 @@ class World:
 
         # according to distribution, number of schools of each type is calculated
 
-        primary_schools_len = int((self.data_source.provinces_population[province]/1000) * self.data_source.primary_schools_per_thousand_people)
-        secondary_schools_len = int((self.data_source.provinces_population[province]/1000) * self.data_source.secondary_schools_per_thousand_people)
-        pre_univ_schools_len = int((self.data_source.provinces_population[province] / 1000) * self.data_source.pre_universitary_schools_per_thousand_people)
-        university_schools_len = int(self.data_source.universities_per_province)
+        primary_schools_len = int(
+            (self.data_source.provinces_population[province]/1000) * self.data_source.primary_schools_per_thousand_people)
+        secondary_schools_len = int(
+            (self.data_source.provinces_population[province]/1000) * self.data_source.secondary_schools_per_thousand_people)
+        pre_univ_schools_len = int(
+            (self.data_source.provinces_population[province] / 1000) * self.data_source.pre_universitary_schools_per_thousand_people)
+        university_schools_len = int(
+            self.data_source.universities_per_province)
 
         schools = {
-            PRIMARY_SCHOOL : [School(province=province, school_type=PRIMARY_SCHOOL) for _ in range(primary_schools_len)],
+            PRIMARY_SCHOOL: [School(province=province, school_type=PRIMARY_SCHOOL) for _ in range(primary_schools_len)],
             SECONDARY_SCHOOL: [School(province=province, school_type=SECONDARY_SCHOOL) for _ in range(secondary_schools_len)],
             PRE_UNIVERSITY_SCHOOL: [School(province=province, school_type=PRE_UNIVERSITY_SCHOOL) for _ in range(pre_univ_schools_len)],
-            UNIVERSITY_SCHOOL: [School(province=province, school_type=UNIVERSITY_SCHOOL) for _ in range(university_schools_len)]
+            UNIVERSITY_SCHOOL: [School(province=province, school_type=UNIVERSITY_SCHOOL)
+                                for _ in range(university_schools_len)]
         }
         # the neighborhoods are created
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
@@ -173,34 +180,32 @@ class World:
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
 
-
         # Create household list from people_number_by_household
-        households = [Household(province=province, number_of_people=people_number_by_household[i][j]) for i in range(people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]
+        households = [Household(province=province, number_of_people=people_number_by_household[i][j]) for i in range(
+            people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]
 
         person_list: list[Person] = []
         start_time = timer()
-        
-        
+
         results = []
-        for h in households:
-            results.extend(create_people_by_household(self.data_source, h, schools))
-        results = [create_people_by_household(self.data_source, h, schools) for h in households]
-        
+        # for h in households:
+        #     results.extend(create_people_by_household(self.data_source, h, schools))
+        results = [create_people_by_household(
+            self.data_source, h, schools) for h in households]
+
         for x in results:
             self.db.save_all(x)
         print('Finished people in ', timer() - start_time)
-        
-        
+
         start_time = timer()
         people_that_work = self.db.find(Person, Person.work)._results
         assert people_that_work is not None
-        people_that_work = self.assign_workplaces_to_people(province, len(people_that_work), people_that_work)
+        people_that_work = self.assign_workplaces_to_people(
+            province, len(people_that_work), people_that_work)
         self.db.save_all(people_that_work)
 
         print('Finished workers in ', timer() - start_time)
-       
-        
-        
+
         # prov_id = self.db.insert_one("Province", {
         #     "province_name": province,
         #     "neighborhoods": neighborhoods,
@@ -213,12 +218,11 @@ class World:
 
         # return prov_id
 
-
     def assign_workplaces_to_people(self, province: str, total_workers: int, people_that_works: list[Person]):
         workers_count = 0
         workplace_size_by_people = np.random.choice(
             a=[0, 1, 2, 3], size=workers_count)
-        
+
         people_mask = np.zeros(len(people_that_works))
 
         while workers_count < total_workers:
@@ -229,10 +233,8 @@ class World:
                     people_that_works[i].workplace = wp
                     people_mask[i] = 1
                     workers_count += 1
-            
-        return people_that_works
-        
 
+        return people_that_works
 
     def run_simulation(self, population_name: str, n_days: int = 2, n_processes=12):
         """Code to run simulation, it gets the contacts based on some pre-stablished rules

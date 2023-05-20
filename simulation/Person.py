@@ -36,6 +36,7 @@ class Person:
         """
 
         self.id = id
+        self.current_location = None
 
         # age_group is assigned according to the distibution
         # age_group is assigned according to the distibution
@@ -108,6 +109,42 @@ class Person:
                     act = data_source.woman_distribution_by_economic_activity
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)[0]
+
+    def move(self, time, politics_deployed):
+        probabilities = {
+            "morning": {"home": 4, "work": 45, "neighborhood": 1, "random place": 5},
+            "noon": {"home": 2, "work": 65, "neighborhood": 1, "random place": 5},
+            "afternoon": {"home": 45, "work": 1, "neighborhood": 3, "random place": 15},
+            "night": {"home": 6, "work": 5, "neighborhood": 2, "random place": 15}
+        }
+
+        probabilities_adjusted = probabilities.get(time, {})
+        total_probability = sum(probabilities_adjusted.values())
+
+        if self.study:
+            probabilities_adjusted["school"] = 0.5
+            probabilities_adjusted["work"] = 0.1
+        if total_probability <= 0:
+            print("No available places to move.")
+            return
+
+        # here the probabilities are normalized and  applied the modifiers (if schools are closed and so..)
+        normalized_probabilities = {
+            place: (prob / total_probability) * politics_deployed[place] for place, prob in probabilities_adjusted.items()}
+
+        choices = list(normalized_probabilities.keys())
+        probabilities = list(normalized_probabilities.values())
+
+        next_location = np.random.choice(choices, probabilities)[0]
+        if next_location == 'random place':
+            # get a place from all places:
+            place_id = 0
+            print(f"moved to random place: {place_id}")
+        elif self.current_location == next_location:
+            print("decided not to move")
+        else:
+            self.current_location = next_location
+            print("Moved to", next_location)
 
     def serialize(self):
         serialized = {

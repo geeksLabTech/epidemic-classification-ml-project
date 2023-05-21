@@ -1,28 +1,22 @@
 from pymongo import MongoClient
 import random
 import numpy as np
-from  places_graph import Graph, build_graph
 from odmantic import SyncEngine
 from models.population import Population
 from models.person import Person
+from .places_graph import Graph,build_graph
 
-
-def run_step_of_simulation(graph : Graph,db,matrix = None):
-    
-    if not matrix:
-        matrix = np.zeros((14,14))
-    
+def run_step_of_simulation(graph : Graph,db,matrix):
+        
     node_list = list(graph.nodes.keys())
     # myclient = MongoClient("mongodb://localhost:27017/")
     # db = myclient["contact_simulation"]
     # population_Collection = db["Person"
     population = db.find(Person)
     for person in population:
-        move = build_move_distribution(person.last_position,person.actual_position,person.age,person.work,person.school,graph)
+        move = build_move_distribution(person.last_place,person.current_place,person.age,person.work,person.school,graph)
         node_list[move].visitors.append(person.id)
     return get_contact_matrix(graph,population,matrix)
-
-
 
 
 def build_move_distribution(last_position,actual_position,age,work,school,graph):
@@ -52,7 +46,11 @@ def build_move_distribution(last_position,actual_position,age,work,school,graph)
         else:
             prob_list[i] = pro_move_random
     position = np.random.choice(prob_list)
-    return move_list[position]
+    if not move_list[position].type == 'N':
+        return move_list[position]
+    else:
+        house_random = random.randint(0,len(graph.nodes[move_list[position]]))
+        return graph.nodes[move_list[position]][house_random]
 
                 
 def get_contact_matrix(graph,population,matrix):
@@ -74,8 +72,12 @@ def get_contact_matrix(graph,population,matrix):
 def run_simulation():
     db = SyncEngine(database='contact_simulation')
     graph =build_graph()
-    for i in range (5):
-        run_step_of_simulation(graph,db)
+    print('done graph')
+    M = matrix = np.zeros((14,14))
+    for i in range(3):
+
+        M = run_step_of_simulation(graph,db,M )
+    print(M)
 
 
         

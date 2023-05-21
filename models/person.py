@@ -30,6 +30,9 @@ class Person(Model):
     economic_activity: Optional[int]
     school: School = Reference()
     workplace: Workplace = Reference() 
+    neighborhood: int
+    last_position: int
+    actual_position: int
 
 
 class PersonFactory():

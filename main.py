@@ -2,20 +2,11 @@ import datetime
 import pandas as pd
 
 from World import World
-from data_loader import DataLoader
 
-from beanie import init_beanie, Document
 
-from models.person import Person
-from models.household import Household
-from models.school import School
-from models.workplace import Workplace
-import asyncio
 
 
 def main():
-
-    dl = DataLoader()
     # print('initializing database')
     # client = AsyncIOMotorClient("mongodb://localhost:27017/")
 

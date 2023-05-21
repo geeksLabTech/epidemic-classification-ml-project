@@ -9,25 +9,20 @@ from asyncpg import Pool
 from beanie import WriteRules
 
 import uuid
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import numpy as np
-# from multiprocessing import Pool
-import multiprocessing
-# from pathos import multiprocessing
-from simulation.Person import Person as SimP
-# from simulation.Household import Household
-# from simulation.School import School
-# from simulation.workplace import Workplace, WorkplaceSize
 
+
+from simulation.Person import Person as SimP
+
+from models.household import HouseholdFactory, Household
 from models.person import Person, PersonFactory
 from models.data_source import DataSource
-from models.province import Province
 from models.population import Population
+from models.province import Province
 
-from data_loader import DataLoader
-from database.mongodb_client import MongoCRUD
-from odmantic import SyncEngine, query, ObjectId
+from odmantic import SyncEngine, ObjectId
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
@@ -35,15 +30,15 @@ db = SyncEngine(database='contact_simulation')
 # -> list[Person]:
 
 
-def create_people_by_household(data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
+def create_people_by_household(data_source: DataSource, province: str, household: Household, schools: dict[str, list[str]]):
     # First guarantee that there is at least one adult in the household
     people = [PersonFactory.create(
-        data_source, household['id'], schools, True)]
-    temp = household['number_of_people'] - 1
+        data_source, household, schools, province, True)]
+    temp = household.number_of_people - 1
 
     if temp > 0:
         people.extend([PersonFactory.create(
-            data_source, household['id'], schools) for i in range(temp)])
+            data_source, household, schools, province) for i in range(temp)])
 
     db.save_all(people)
     return people
@@ -135,10 +130,6 @@ class World:
             print('Finished in', timer() - start_time)
         population.provinces = provinces
         self.db.save(population)
-        # for i in self.data_source.provinces_population:
-
-        # self.db.insert_one("Population", {"population_name": population_name,
-        #                                   "provinces": provinces, "total_population": self.total_population})
 
     def generate_province(self, province: str, n_processes: int = 12, verbose=3):
         """generate neigborhoods for a given province
@@ -163,8 +154,6 @@ class World:
         if verbose >= 2:
             print(province)
 
-        province_obj = Province(
-            province=province, people=[])
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
         # all hosueholds inside a neighborhood
@@ -182,10 +171,10 @@ class World:
             self.data_source.universities_per_province), 1)
 
         schools = {
-            PRIMARY_SCHOOL: [str(uuid.uuid4()) for _ in range(primary_schools_len)],
-            SECONDARY_SCHOOL: [str(uuid.uuid4()) for _ in range(secondary_schools_len)],
-            PRE_UNIVERSITY_SCHOOL: [str(uuid.uuid4()) for _ in range(pre_univ_schools_len)],
-            UNIVERSITY_SCHOOL: [str(uuid.uuid4())
+            PRIMARY_SCHOOL: [str(uuid4()) for _ in range(primary_schools_len)],
+            SECONDARY_SCHOOL: [str(uuid4()) for _ in range(secondary_schools_len)],
+            PRE_UNIVERSITY_SCHOOL: [str(uuid4()) for _ in range(pre_univ_schools_len)],
+            UNIVERSITY_SCHOOL: [str(uuid4())
                                 for _ in range(university_schools_len)]
         }
         # province_obj.schools = {
@@ -204,24 +193,19 @@ class World:
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
 
+        neighborhoods_ids = [uuid4() for _ in range(people_number_by_household.shape[0])]
         # Create household list from people_number_by_household
-        households = [{'id': str(uuid.uuid4()), 'number_of_people': people_number_by_household[i][j]} for i in range(
+        households = [HouseholdFactory.create(neighborhoods_ids[i], province, people_number_by_household[i][j]) for i in range(
             people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]
 
         # province_obj.households = [h.id for h in households]
 
-        person_list: list[str] = []
+        
         start_time = timer()
 
-        results = []
-        # for h in households:
-        #     results.extend(create_people_by_household(self.data_source, h, schools))
         for h in households:
-            for i in create_people_by_household(
-                    self.data_source, h, schools):
-                person_list.append(str(i.id))
-
-        province_obj.people = person_list
+            create_people_by_household(self.data_source, province, h, schools)
+                
         del households
         del schools
 
@@ -232,26 +216,17 @@ class World:
             Person, Person.work == True)]
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
-            province, len(people_that_work), people_that_work)
-        # province_obj.workplaces = [w.id for w in workplaces]
+            len(people_that_work), people_that_work)
+    
         self.db.save_all(people_that_work)
 
         print('Finished workers in ', timer() - start_time)
 
-        # prov_id = self.db.insert_one("Province", {
-        #     "province_name": province,
-        #     "neighborhoods": neighborhoods,
-        #     "schools": inserted_schools,
-        #     "workplaces": workplaces
-        # }).inserted_id
-        self.db.save(province_obj)
         if verbose >= 2:
             print("Finished:", province)
-        return province_obj.id
-        # return prov_id
+        
 
-    def assign_workplaces_to_people(self, province: str, total_workers: int, people_that_works: list[Person]):
-
+    def assign_workplaces_to_people(self, total_workers: int, people_that_works: list[Person]):
         workers_count = 0
         workplace_size_by_people = np.random.choice(
             a=[0, 1, 2, 3], size=len(people_that_works))
@@ -260,7 +235,7 @@ class World:
 
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
-            wp = str(uuid.uuid4())
+            wp = str(uuid4())
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp

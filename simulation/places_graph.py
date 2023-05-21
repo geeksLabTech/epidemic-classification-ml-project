@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 import random
 from odmantic import SyncEngine
-from models.population import Population
+from  models.population import Population
 from models.person import Person
 
 class Node:
@@ -50,9 +50,9 @@ def create_neighborhood(data, graph):
             graph.add_node(graph.id_nodes[person.household])
         
 def add_edge_neighborhood(graph):
-    for node1 in graph.id_node:
-        for node2 in graph.id_node:
-            if not node1 == node2 and node1.neighborhood == node2.neighborhood:
+    for node1 in graph.id_nodes:
+        for node2 in graph.id_nodes:
+            if not node1 == node2 and node1.household == node2.household:
                 graph.add_edge(graph.id_nodes[node1],graph.id_nodes[node2])
                 graph.add_edge(graph.id_nodes[node2],graph.id_nodes[node1])
                   
@@ -90,3 +90,4 @@ def create_random_entertainment_places(graph):
         graph.add_edge(random_node, new_place)
         graph.add_edge(new_place, random_node)
     
+

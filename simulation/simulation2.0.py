@@ -1,17 +1,17 @@
 from pymongo import MongoClient
 import random
 import numpy as np
-import places_graph
+from  places_graph import Graph, build_graph
 from odmantic import SyncEngine
 from models.population import Population
 from models.person import Person
 
 
-def run_step_of_simulation(matrix = None):
-    db = SyncEngine(database='contact_simulation')
+def run_step_of_simulation(graph : Graph,db,matrix = None):
+    
     if not matrix:
         matrix = np.zeros((14,14))
-    graph =places_graph.build_graph()
+    
     node_list = list(graph.nodes.keys())
     # myclient = MongoClient("mongodb://localhost:27017/")
     # db = myclient["contact_simulation"]
@@ -71,7 +71,12 @@ def get_contact_matrix(graph,population,matrix):
     return matrix
     
 
-                 
+def run_simulation():
+    db = SyncEngine(database='contact_simulation')
+    graph =build_graph()
+    for i in range (5):
+        run_step_of_simulation(graph,db)
+
 
         
     

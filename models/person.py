@@ -4,7 +4,7 @@ from typing import Optional, Union
 from odmantic import AIOEngine, Model, Reference
 from models.data_source import DataSource
 from models.household import Household
-
+from uuid import UUID
 from models.school import School
 from models.workplace import Workplace, WorkplaceFactory
 
@@ -12,6 +12,7 @@ import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
 
 from beanie import Document, Link
+
 
 # class Sex(Enum):
 #     Male = 0
@@ -26,10 +27,10 @@ class Person(Model):
     work: bool
     study: bool
     study_details: Optional[str]
-    household: Household = Reference()
+    household: Optional[str]
     economic_activity: Optional[int]
-    school: School = Reference()
-    workplace: Workplace = Reference() 
+    school: Optional[str]
+    workplace: Optional[str]
 
 
 class PersonFactory():

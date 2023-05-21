@@ -29,7 +29,7 @@ class Person:
             unique identifier of the referenced EconomicActivity instance
     """
 
-    def __init__(self, data_source: DataLoader, is_adult_required: bool = False):
+    def __init__(self, data_source: DataLoader = DataLoader(), is_adult_required: bool = False):
         """Person generation takes all demographic data to fill needed fields
             Attributes:
             ----------
@@ -141,16 +141,16 @@ class Person:
 
         next_location = np.random.choice(choices, probabilities)[0]
         if next_location == 'random place':
-            # get a place from all places:
-            location_type = np.random.choice(
-                [Household, Workplace, School])[0]
-            # load from db the corresponding collection and get a random item
-            all_documents = db.find(location_type)
-            random_element = np.random.choice(all_documents)
+            # # get a place from all places:
+            # location_type = np.random.choice(
+            #     [Household, Workplace, School])[0]
+            # # load from db the corresponding collection and get a random item
+            # all_documents = db.find(location_type)
+            # random_element = np.random.choice(all_documents)
 
             place_id = 0
-            location = {"place": place_id,
-                        'time': time, 'day': day, "person_id": self.p_id}
+            # location = {"place": place_id,
+            #             'time': time, 'day': day, "person_id": self.p_id}
             print(f"moved to random place: {place_id}")
         elif self.current_location == next_location:
             location = {"place": self.__dict__[next_location],
@@ -178,8 +178,8 @@ class Person:
         return serialized
 
     @staticmethod
-    def load_serialized(serialized, data_source):
-        person = Person(data_source)
+    def load_serialized(serialized):
+        person = Person()
         person.age_group = serialized["age_group"]
         person.age = serialized["age"]
         person.sex = serialized["sex"]

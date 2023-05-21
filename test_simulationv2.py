@@ -11,6 +11,7 @@ from models.school import School
 from models.workplace import Workplace
 import asyncio
 from simulation.places_graph import build_graph
+from simulation.simulationv2 import run_simulation
 
 def main():
 
@@ -23,11 +24,13 @@ def main():
     w = World('data.json')
 
     print("Generating Population")
-    w.generate_population("pinar", n_processes=40)
+    # w.generate_population("pinar", n_processes=40)
 
     print("Done!, Simmulating days now...")
-    build_graph()
-    print('done graph')
+    # build_graph()
+    
+    # print('done graph')
+    run_simulation()
     # w.run_simulation("pinar", 100)
     # print("Building Matrix")
     # labels = [str(i[0])+"-"+str(i[1]) for i in dl.age_groups]

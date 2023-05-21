@@ -2,9 +2,10 @@
 from enum import Enum
 from typing import Optional, Union
 from odmantic import AIOEngine, Model, Reference
+from sklearn import neighbors
 from models.data_source import DataSource
 from models.household import Household
-
+from uuid import UUID
 from models.school import School
 from models.workplace import Workplace, WorkplaceFactory
 
@@ -12,6 +13,7 @@ import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
 
 from beanie import Document, Link
+
 
 # class Sex(Enum):
 #     Male = 0
@@ -26,18 +28,18 @@ class Person(Model):
     work: bool
     study: bool
     study_details: Optional[str]
-    household: Household = Reference()
+    household: str
     economic_activity: Optional[int]
-    school: School = Reference()
-    workplace: Workplace = Reference() 
-    neighborhood: int
-    last_position: int
-    actual_position: int
-
+    school: Optional[str]
+    workplace: Optional[str]
+    neighborhood: str
+    last_place: Optional[str]
+    current_place: Optional[str]
+    province: str
 
 class PersonFactory():
     @classmethod
-    def create(cls, data_source: DataSource, household: Household, schools: dict[str, list[School]], is_adult_required = False) -> Person:
+    def create(cls, data_source: DataSource, household: Household, schools: dict[str, list[str]], province: str, is_adult_required = False) -> Person:
         age_group = cls.get_age_group(data_source, is_adult_required)
 
         # once the age group is selected, an uniform distribution is assumed
@@ -58,7 +60,7 @@ class PersonFactory():
         school_index = None if not study else np.random.choice(a=len(schools[study_details]), size=1)[0]
         school = NULL_SCHOOL if school_index is None else schools[study_details][school_index]
 
-        person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study, study_details=study_details, economic_activity=economic_activity, school=school, household=household, workplace=NULL_WORKPLACE)
+        person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study, study_details=study_details, economic_activity=economic_activity, school=school, household=str(household.id), workplace=NULL_WORKPLACE, neighborhood=str(household.neighborhood_id), current_place=str(household.id), last_place=str(household.id), province=province)
         # person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study)
         return person
 

@@ -29,7 +29,7 @@ class Person:
             unique identifier of the referenced EconomicActivity instance
     """
 
-    def __init__(self, data_source: DataLoader, is_adult_required: bool = False):
+    def __init__(self, data_source: DataLoader = DataLoader(), is_adult_required: bool = False):
         """Person generation takes all demographic data to fill needed fields
             Attributes:
             ----------
@@ -116,41 +116,50 @@ class Person:
 
     def move(self, day, time, politics_deployed, db=SyncEngine(database='contact_simulation')):
         probabilities = {
-            "morning": {"home": 4, "work": 45, "neighborhood": 1, "random place": 5},
-            "noon": {"home": 2, "work": 65, "neighborhood": 1, "random place": 5},
-            "afternoon": {"home": 45, "work": 1, "neighborhood": 3, "random place": 15},
-            "night": {"home": 6, "work": 5, "neighborhood": 2, "random place": 15}
+            "morning": {"household": 4, "work": 45, "neighborhood": 1, "random place": 5},
+            "noon": {"household": 2, "work": 65, "neighborhood": 1, "random place": 5},
+            "afternoon": {"household": 45, "work": 1, "neighborhood": 3, "random place": 15},
+            "night": {"household": 6, "work": 5, "neighborhood": 2, "random place": 15}
         }
 
         probabilities_adjusted = probabilities.get(time, {})
-        total_probability = sum(probabilities_adjusted.values())
+        for i in probabilities_adjusted:
+            probabilities_adjusted[i] *= politics_deployed[i]
+        print(probabilities_adjusted)
 
         if self.study:
             probabilities_adjusted["school"] = 0.5
             probabilities_adjusted["work"] = 0.1
+
+        total_probability = sum(probabilities_adjusted.values())
+
         if total_probability <= 0:
             print("No available places to move.")
             return
 
         # here the probabilities are normalized and  applied the modifiers (if schools are closed and so..)
-        normalized_probabilities = {
-            place: (prob / total_probability) * politics_deployed[place] for place, prob in probabilities_adjusted.items()}
+        normalized_probabilities = {}
+        for place, prob in probabilities_adjusted.items():
+            normalized_probabilities[place] = prob / total_probability
 
         choices = list(normalized_probabilities.keys())
         probabilities = list(normalized_probabilities.values())
 
-        next_location = np.random.choice(choices, probabilities)[0]
+        if sum(probabilities) != 1:
+            probabilities[-1] = 1 - sum(probabilities)
+
+        next_location = np.random.choice(choices, p=probabilities)
         if next_location == 'random place':
-            # get a place from all places:
-            location_type = np.random.choice(
-                [Household, Workplace, School])[0]
-            # load from db the corresponding collection and get a random item
-            all_documents = db.find(location_type)
-            random_element = np.random.choice(all_documents)
+            # # get a place from all places:
+            # location_type = np.random.choice(
+            #     [Household, Workplace, School])[0]
+            # # load from db the corresponding collection and get a random item
+            # all_documents = db.find(location_type)
+            # random_element = np.random.choice(all_documents)
 
             place_id = 0
-            location = {"place": place_id,
-                        'time': time, 'day': day, "person_id": self.p_id}
+            # location = {"place": place_id,
+            #             'time': time, 'day': day, "person_id": self.p_id}
             print(f"moved to random place: {place_id}")
         elif self.current_location == next_location:
             location = {"place": self.__dict__[next_location],
@@ -178,8 +187,8 @@ class Person:
         return serialized
 
     @staticmethod
-    def load_serialized(serialized, data_source):
-        person = Person(data_source)
+    def load_serialized(serialized):
+        person = Person()
         person.age_group = serialized["age_group"]
         person.age = serialized["age"]
         person.sex = serialized["sex"]
@@ -190,5 +199,5 @@ class Person:
         person.workplace = serialized['workplace']
         person.school = serialized['school']
         person.household = serialized['household']
-        person.p_id = serialized['_id']
+        person.p_id = serialized['id']
         return person

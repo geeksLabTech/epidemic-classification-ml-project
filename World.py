@@ -27,7 +27,7 @@ from models.population import Population
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
-from odmantic import SyncEngine, query
+from odmantic import SyncEngine, query, ObjectId
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
@@ -78,11 +78,11 @@ class World:
         self.db = SyncEngine(database='contact_simulation')
 
         self.politics_deployed = {
-            'home': 1,
+            'household': 1,
             'school': 1,
             'work': 1,
-            'neigborhood': 1,
-            'random_place': 1
+            'neighborhood': 0,
+            'random place': 1
         }
 
         # multi threaded process to speed up population generation
@@ -296,8 +296,10 @@ class World:
                         province = self.db.find_one(
                             Province, Province.id == prov_id)
                         for p_id in province.people:
+                            print(p_id)
                             person = self.db.find_one(
-                                Person, Person.id == p_id)
+                                Person, Person.id == ObjectId(p_id))
+                            assert person != None, 'Person cant be None'
                             person_obj = SimP.load_serialized(
-                                person.__dict__())
-                            person_obj.move(day, time, self.politics_deployed)
+                                person.__dict__)
+                            person_obj.move(i, time, self.politics_deployed)

@@ -116,30 +116,39 @@ class Person:
 
     def move(self, day, time, politics_deployed, db=SyncEngine(database='contact_simulation')):
         probabilities = {
-            "morning": {"home": 4, "work": 45, "neighborhood": 1, "random place": 5},
-            "noon": {"home": 2, "work": 65, "neighborhood": 1, "random place": 5},
-            "afternoon": {"home": 45, "work": 1, "neighborhood": 3, "random place": 15},
-            "night": {"home": 6, "work": 5, "neighborhood": 2, "random place": 15}
+            "morning": {"household": 4, "work": 45, "neighborhood": 1, "random place": 5},
+            "noon": {"household": 2, "work": 65, "neighborhood": 1, "random place": 5},
+            "afternoon": {"household": 45, "work": 1, "neighborhood": 3, "random place": 15},
+            "night": {"household": 6, "work": 5, "neighborhood": 2, "random place": 15}
         }
 
         probabilities_adjusted = probabilities.get(time, {})
-        total_probability = sum(probabilities_adjusted.values())
+        for i in probabilities_adjusted:
+            probabilities_adjusted[i] *= politics_deployed[i]
+        print(probabilities_adjusted)
 
         if self.study:
             probabilities_adjusted["school"] = 0.5
             probabilities_adjusted["work"] = 0.1
+
+        total_probability = sum(probabilities_adjusted.values())
+
         if total_probability <= 0:
             print("No available places to move.")
             return
 
         # here the probabilities are normalized and  applied the modifiers (if schools are closed and so..)
-        normalized_probabilities = {
-            place: (prob / total_probability) * politics_deployed[place] for place, prob in probabilities_adjusted.items()}
+        normalized_probabilities = {}
+        for place, prob in probabilities_adjusted.items():
+            normalized_probabilities[place] = prob / total_probability
 
         choices = list(normalized_probabilities.keys())
         probabilities = list(normalized_probabilities.values())
 
-        next_location = np.random.choice(choices, probabilities)[0]
+        if sum(probabilities) != 1:
+            probabilities[-1] = 1 - sum(probabilities)
+
+        next_location = np.random.choice(choices, p=probabilities)
         if next_location == 'random place':
             # # get a place from all places:
             # location_type = np.random.choice(
@@ -190,5 +199,5 @@ class Person:
         person.workplace = serialized['workplace']
         person.school = serialized['school']
         person.household = serialized['household']
-        person.p_id = serialized['_id']
+        person.p_id = serialized['id']
         return person

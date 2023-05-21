@@ -1,21 +1,6 @@
 {
   "provinces_population": {
-    "Pinar del Rio": 583037,
-    "Artemisa": 514332,
-    "La Habana": 2132183,
-    "Mayabeque": 384389,
-    "Matanzas": 716320,
-    "Villa Clara": 775091,
-    "Cienfuegos": 406224,
-    "Sancti Spiritus": 463844,
-    "Ciego de Avila": 435326,
-    "Camaguey": 763389,
-    "Las Tunas": 533224,
-    "Holguin": 1021591,
-    "Granma": 817763,
-    "Santiago de Cuba": 1045631,
-    "Guantanamo": 505606,
-    "Isla de la Juventud": 83625
+    "Pinar del Rio": 583037
   },
 
   "total_employees": 47100,

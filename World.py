@@ -25,11 +25,14 @@ from models.data_source import DataSource
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD
-from odmantic import SyncEngine
+from odmantic import SyncEngine, query
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
+db = SyncEngine(database='contact_simulation')
 
 # -> list[Person]:
+
+
 def create_people_by_household(data_source: DataSource, household: Household, schools: dict[str, list[School]]):
     # First guarantee that there is at least one adult in the household
     people = [PersonFactory.create(data_source, household, schools, True)]
@@ -39,7 +42,6 @@ def create_people_by_household(data_source: DataSource, household: Household, sc
         people.extend([PersonFactory.create(
             data_source, household, schools) for i in range(temp)])
 
-    db = SyncEngine(database='contact_simulation')
     db.save_all(people)
     return people
 
@@ -154,14 +156,14 @@ class World:
 
         # according to distribution, number of schools of each type is calculated
 
-        primary_schools_len = int(
-            (self.data_source.provinces_population[province]/1000) * self.data_source.primary_schools_per_thousand_people)
-        secondary_schools_len = int(
-            (self.data_source.provinces_population[province]/1000) * self.data_source.secondary_schools_per_thousand_people)
-        pre_univ_schools_len = int(
-            (self.data_source.provinces_population[province] / 1000) * self.data_source.pre_universitary_schools_per_thousand_people)
-        university_schools_len = int(
-            self.data_source.universities_per_province)
+        primary_schools_len = max(int(
+            (self.data_source.provinces_population[province]/1000) * self.data_source.primary_schools_per_thousand_people), 1)
+        secondary_schools_len = max(int(
+            (self.data_source.provinces_population[province]/1000) * self.data_source.secondary_schools_per_thousand_people), 1)
+        pre_univ_schools_len = max(int(
+            (self.data_source.provinces_population[province]/1000) * self.data_source.pre_universitary_schools_per_thousand_people), 1)
+        university_schools_len = max(int(
+            self.data_source.universities_per_province), 1)
 
         schools = {
             PRIMARY_SCHOOL: [School(province=province, school_type=PRIMARY_SCHOOL) for _ in range(primary_schools_len)],
@@ -192,11 +194,12 @@ class World:
         #     results.extend(create_people_by_household(self.data_source, h, schools))
         for h in households:
             create_people_by_household(self.data_source, h, schools)
-            
+
         print('Finished people in ', timer() - start_time)
 
         start_time = timer()
-        people_that_work = [i for i in self.db.find(Person, Person.work)]
+        people_that_work = [i for i in self.db.find(
+            Person, Person.work == True)]
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
             province, len(people_that_work), people_that_work)
@@ -219,7 +222,7 @@ class World:
     def assign_workplaces_to_people(self, province: str, total_workers: int, people_that_works: list[Person]):
         workers_count = 0
         workplace_size_by_people = np.random.choice(
-            a=[0, 1, 2, 3], size=workers_count)
+            a=[0, 1, 2, 3], size=len(people_that_works))
 
         people_mask = np.zeros(len(people_that_works))
 

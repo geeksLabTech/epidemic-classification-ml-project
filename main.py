@@ -11,7 +11,7 @@ from models.household import Household
 from models.school import School
 from models.workplace import Workplace
 import asyncio
-
+from simulation.places_graph import build_graph
 
 def main():
 
@@ -40,3 +40,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# build_graph()

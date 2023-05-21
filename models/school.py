@@ -1,7 +1,7 @@
 
 
 from enum import Enum
-from beanie import Document
+
 from odmantic import Model
 
 

@@ -6,7 +6,7 @@ from timeit import default_timer as timer
 from typing import List
 from unittest import result
 from asyncpg import Pool
-from beanie import WriteRules
+
 
 import uuid
 from uuid import UUID, uuid4

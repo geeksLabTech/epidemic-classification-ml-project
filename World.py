@@ -39,8 +39,8 @@ def create_people_by_household(data_source: DataSource, household: Household, sc
         people.extend([PersonFactory.create(
             data_source, household, schools) for i in range(temp)])
 
-    # db = SyncEngine(database='contact_simulation')
-    # db.save_all(people)
+    db = SyncEngine(database='contact_simulation')
+    db.save_all(people)
     return people
 
 
@@ -190,15 +190,13 @@ class World:
         results = []
         # for h in households:
         #     results.extend(create_people_by_household(self.data_source, h, schools))
-        results = [create_people_by_household(
-            self.data_source, h, schools) for h in households]
-
-        for x in results:
-            self.db.save_all(x)
+        for h in households:
+            create_people_by_household(self.data_source, h, schools)
+            
         print('Finished people in ', timer() - start_time)
 
         start_time = timer()
-        people_that_work = self.db.find(Person, Person.work)._results
+        people_that_work = [i for i in self.db.find(Person, Person.work)]
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
             province, len(people_that_work), people_that_work)

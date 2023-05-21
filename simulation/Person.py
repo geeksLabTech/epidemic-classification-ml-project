@@ -1,5 +1,9 @@
 import numpy as np
 from data_loader import DataLoader
+from models.household import Household
+from models.school import School
+from models.workplace import Workplace
+from odmantic import SyncEngine
 
 
 class Person:
@@ -110,7 +114,7 @@ class Person:
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)[0]
 
-    def move(self, time, politics_deployed):
+    def move(self, day, time, politics_deployed, db=SyncEngine(database='contact_simulation')):
         probabilities = {
             "morning": {"home": 4, "work": 45, "neighborhood": 1, "random place": 5},
             "noon": {"home": 2, "work": 65, "neighborhood": 1, "random place": 5},
@@ -138,12 +142,24 @@ class Person:
         next_location = np.random.choice(choices, probabilities)[0]
         if next_location == 'random place':
             # get a place from all places:
+            location_type = np.random.choice(
+                [Household, Workplace, School])[0]
+            # load from db the corresponding collection and get a random item
+            all_documents = db.find(location_type)
+            random_element = np.random.choice(all_documents)
+
             place_id = 0
+            location = {"place": place_id,
+                        'time': time, 'day': day, "person_id": self.p_id}
             print(f"moved to random place: {place_id}")
         elif self.current_location == next_location:
+            location = {"place": self.__dict__[next_location],
+                        'time': time, 'day': day, "person_id": self.p_id}
             print("decided not to move")
         else:
             self.current_location = next_location
+            location = {"place": self.__dict__[next_location],
+                        'time': time, 'day': day, "person_id": self.p_id}
             print("Moved to", next_location)
 
     def serialize(self):
@@ -171,4 +187,8 @@ class Person:
         person.study = serialized["study"]
         person.study_details = serialized["study_details"]
         person.economic_activity = serialized["economic_activity"]
+        person.workplace = serialized['workplace']
+        person.school = serialized['school']
+        person.household = serialized['household']
+        person.p_id = serialized['_id']
         return person

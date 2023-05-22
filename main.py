@@ -4,8 +4,6 @@ import pandas as pd
 from World import World
 
 
-
-
 def main():
     # print('initializing database')
     # client = AsyncIOMotorClient("mongodb://localhost:27017/")
@@ -15,7 +13,7 @@ def main():
     w = World('data.json')
 
     print("Generating Population")
-    w.generate_population("pinar", n_processes=40)
+    # w.generate_population("pinar", n_processes=40)
 
     print("Done!, Simmulating days now...")
 

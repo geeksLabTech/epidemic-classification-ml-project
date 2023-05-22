@@ -4,11 +4,7 @@ from typing import Optional, Union
 from odmantic import AIOEngine, Model, Reference
 from sklearn import neighbors
 from models.data_source import DataSource
-from models.household import Household
 from uuid import UUID
-from models.school import School
-from models.workplace import Workplace, WorkplaceFactory
-
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
 
@@ -40,7 +36,7 @@ class Person(Model):
 
 class PersonFactory():
     @classmethod
-    def create(cls, data_source: DataSource, household: Household, schools: dict[str, list[str]], province: str, is_adult_required=False) -> Person:
+    def create(cls, data_source: DataSource, household: dict, schools: dict[str, list[str]], province: str, is_adult_required=False) -> Person:
         age_group = cls.get_age_group(data_source, is_adult_required)
 
         # once the age group is selected, an uniform distribution is assumed

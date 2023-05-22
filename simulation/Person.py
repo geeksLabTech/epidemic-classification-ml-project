@@ -1,9 +1,30 @@
 import numpy as np
 from data_loader import DataLoader
-from models.household import Household
-from models.school import School
-from models.workplace import Workplace
-from odmantic import SyncEngine
+from models.action import Action
+from models.person import Person as PersonModel
+from odmantic import SyncEngine, Model
+from pymongo import MongoClient
+
+
+def get_random_element_from_collection():
+    # Replace with your MongoDB connection string
+    client = MongoClient("mongodb://localhost:27017")
+    db = client["contact_simulation"]  # Replace with your database name
+    # Replace with your collection name
+    collection = db["person"]
+
+    # Get the count of documents in the collection
+    count = collection.count_documents({})
+    # Generate a random index within the range of the document count
+    random_index = np.random.randint(0, count - 1)
+
+    # Get the random element
+    random_element = list(collection.find().skip(random_index).limit(1))
+
+    # Create a Person instance from the retrieved document
+    person = PersonModel(**random_element[0])
+
+    return person
 
 
 class Person:
@@ -114,22 +135,25 @@ class Person:
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)[0]
 
-    def move(self, day, time, politics_deployed, db=SyncEngine(database='contact_simulation')):
+    def move(self, db_obj, day, time, politics_deployed, sim_id: str, db=SyncEngine(database='contact_simulation')):
         probabilities = {
-            "morning": {"household": 4, "work": 45, "neighborhood": 1, "random place": 5},
-            "noon": {"household": 2, "work": 65, "neighborhood": 1, "random place": 5},
-            "afternoon": {"household": 45, "work": 1, "neighborhood": 3, "random place": 15},
-            "night": {"household": 6, "work": 5, "neighborhood": 2, "random place": 15}
+            "morning": {"household": 4, "workplace": 45, "neighborhood": 1, "random place": 5},
+            "noon": {"household": 2, "workplace": 65, "neighborhood": 1, "random place": 5},
+            "afternoon": {"household": 45, "workplace": 1, "neighborhood": 3, "random place": 15},
+            "night": {"household": 6, "workplace": 5, "neighborhood": 2, "random place": 15}
         }
 
         probabilities_adjusted = probabilities.get(time, {})
         for i in probabilities_adjusted:
             probabilities_adjusted[i] *= politics_deployed[i]
-        print(probabilities_adjusted)
+        # print(probabilities_adjusted)
+
+        if not self.work:
+            probabilities_adjusted['workplace'] = 0
 
         if self.study:
-            probabilities_adjusted["school"] = 0.5
-            probabilities_adjusted["work"] = 0.1
+            probabilities_adjusted["school"] = 0.6
+            probabilities_adjusted["workplace"] = 0
 
         total_probability = sum(probabilities_adjusted.values())
 
@@ -149,27 +173,32 @@ class Person:
             probabilities[-1] = 1 - sum(probabilities)
 
         next_location = np.random.choice(choices, p=probabilities)
+        print(probabilities)
         if next_location == 'random place':
-            # # get a place from all places:
-            # location_type = np.random.choice(
-            #     [Household, Workplace, School])[0]
-            # # load from db the corresponding collection and get a random item
-            # all_documents = db.find(location_type)
-            # random_element = np.random.choice(all_documents)
+            while True:
+                random_person = get_random_element_from_collection()
+                places = [
+                    random_person.household,
+                    random_person.school,
+                    random_person.neighborhood,
+                    random_person.workplace
+                ]
+                places = [i for i in places if i != None]
+                if len(places) > 0:
+                    break
+            place_id = np.random.choice(a=places)
+            self.current_location = place_id
 
-            place_id = 0
-            # location = {"place": place_id,
-            #             'time': time, 'day': day, "person_id": self.p_id}
             print(f"moved to random place: {place_id}")
-        elif self.current_location == next_location:
-            location = {"place": self.__dict__[next_location],
-                        'time': time, 'day': day, "person_id": self.p_id}
-            print("decided not to move")
+        elif self.current_location == self.__dict__[next_location]:
+            print(f"decided not to move, stayed at {self.current_location}")
         else:
-            self.current_location = next_location
-            location = {"place": self.__dict__[next_location],
-                        'time': time, 'day': day, "person_id": self.p_id}
+            self.current_location = self.__dict__[next_location]
             print("Moved to", next_location)
+
+        action = Action(destination=self.current_location, person=str(self.p_id),
+                        day=day, time=time, simulation_id=sim_id)
+        db.save(action)
 
     def serialize(self):
         serialized = {
@@ -186,7 +215,7 @@ class Person:
         # print(serialized)
         return serialized
 
-    @staticmethod
+    @ staticmethod
     def load_serialized(serialized):
         person = Person()
         person.age_group = serialized["age_group"]
@@ -197,7 +226,9 @@ class Person:
         person.study_details = serialized["study_details"]
         person.economic_activity = serialized["economic_activity"]
         person.workplace = serialized['workplace']
+        person.current_location = serialized['current_place']
         person.school = serialized['school']
+        person.neighborhood = serialized['neighborhood']
         person.household = serialized['household']
         person.p_id = serialized['id']
         return person

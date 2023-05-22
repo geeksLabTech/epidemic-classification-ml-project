@@ -22,7 +22,6 @@ from simulation.Person import Person as SimP
 
 from models.person import Person, PersonFactory
 from models.data_source import DataSource
-from models.province import Province
 from models.population import Population
 
 from data_loader import DataLoader
@@ -80,7 +79,7 @@ class World:
         self.politics_deployed = {
             'household': 1,
             'school': 1,
-            'work': 1,
+            'workplace': 1,
             'neighborhood': 1,
             'random place': 1
         }
@@ -164,8 +163,6 @@ class World:
         if verbose >= 2:
             print(province)
 
-        province_obj = Province(
-            province=province, people=[])
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
         # all hosueholds inside a neighborhood
@@ -222,7 +219,6 @@ class World:
                                                 self.data_source, h, schools):
                 person_list.append(str(i.id))
 
-        province_obj.people = person_list
         del households
         del schools
 
@@ -245,10 +241,8 @@ class World:
         #     "schools": inserted_schools,
         #     "workplaces": workplaces
         # }).inserted_id
-        self.db.save(province_obj)
         if verbose >= 2:
             print("Finished:", province)
-        return province_obj.id
         # return prov_id
 
     def assign_workplaces_to_people(self, province: str, total_workers: int, people_that_works: list[Person]):
@@ -299,6 +293,9 @@ class World:
                             Person, Person.province == prov_id)
                         for person in province:
                             assert person != None, 'Person cant be None'
-                            person_obj = SimP.load_serialized(
-                                person.__dict__)
-                            person_obj.move(i, time, self.politics_deployed)
+                            pers = person.__dict__
+                            pers['id'] = str(person.id)
+                            print(str(person.id))
+                            person_obj = SimP.load_serialized(pers)
+                            person_obj.move(person_obj,
+                                            i, time, self.politics_deployed, 1, db)

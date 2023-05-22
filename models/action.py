@@ -3,8 +3,7 @@ from odmantic import Model, ObjectId
 
 class Action(Model):
     destination: str
-    destination_id: ObjectId
-    person: ObjectId
+    person: str
     day: int
     time: str
     simulation_id: str

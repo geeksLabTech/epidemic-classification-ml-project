@@ -23,11 +23,12 @@ def build_move_distribution(last_position,actual_position,age,work,school,graph)
     node_actual = graph.id_nodes[actual_position]
     possible_next_moves = graph.nodes[node_actual]
     move_list = [] 
-    prob_list =[]*len(possible_next_moves)
+    prob_list =[0.0]*len(possible_next_moves)
+    print(prob_list,'moves')
     pro_move_random = (len(possible_next_moves) - 2)/0.3
-    for i in possible_next_moves:
+    for i in range (len(possible_next_moves)):
         move_list.append(i)
-        if i.type == 'H':
+        if possible_next_moves[i].type == 'H':
             if not last_position.type == 'H':
                 if last_position == 'W':
                     prob_list[i] = 0.4
@@ -35,7 +36,7 @@ def build_move_distribution(last_position,actual_position,age,work,school,graph)
                     prob_list[i] = 0.3
             else:
                 prob_list[i] = 0.2
-        elif i.type == 'W':
+        elif possible_next_moves[i] == 'W':
             if not last_position.type == 'W':
                 if last_position == 'H':
                     prob_list[i] = 0.4

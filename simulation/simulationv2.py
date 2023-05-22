@@ -5,6 +5,8 @@ from odmantic import SyncEngine
 from models.population import Population
 from models.person import Person
 from .places_graph import Graph,build_graph
+import pickle
+from pathlib import Path
 
 def run_step_of_simulation(graph : Graph,db,matrix):
         
@@ -69,10 +71,26 @@ def get_contact_matrix(graph,population,matrix):
     return matrix
     
 
-def run_simulation():
+def save_graph_to_file(graph: Graph):
+    with open('graph.obj', 'wb') as file:
+        pickle.dump(graph, file)
+
+
+def load_graph_from_file() -> Graph:
+    with open('graph.obj', 'rb') as file:
+        return pickle.load(file)
+
+
+def run_simulation(use_cache=True):
     db = SyncEngine(database='contact_simulation')
-    graph =build_graph()
-    print('done graph')
+    if use_cache and Path('graph.obj').is_file():
+        graph = load_graph_from_file()
+        print('Graph loaded with pickle')
+    else:
+        print('Starting graph creation')
+        graph = build_graph()
+        save_graph_to_file(graph)
+        print('done graph')
     M = matrix = np.zeros((14,14))
     for i in range(3):
 

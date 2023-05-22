@@ -15,11 +15,11 @@ def main():
     w = World('data.json')
 
     print("Generating Population")
-    # w.generate_population("pinar", n_processes=40)
+    w.generate_population("pinar", n_processes=40)
 
     print("Done!, Simmulating days now...")
 
-    w.run_simulation("pinar", 100)
+    w.run_simulation("pinar", 2)
     # print("Building Matrix")
     # labels = [str(i[0])+"-"+str(i[1]) for i in dl.age_groups]
 

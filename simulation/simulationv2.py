@@ -20,7 +20,7 @@ def run_step_of_simulation(graph : Graph,db,matrix):
 
 
 def build_move_distribution(last_position,actual_position,age,work,school,graph):
-    node_actual = graph.id_node[actual_position]
+    node_actual = graph.id_nodes[actual_position]
     possible_next_moves = graph.nodes[node_actual]
     move_list = [] 
     prob_list =[]*len(possible_next_moves)

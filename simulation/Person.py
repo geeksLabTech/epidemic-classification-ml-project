@@ -172,16 +172,10 @@ class Person:
             print("No available places to move.")
             return
 
-        # here the probabilities are normalized and  applied the modifiers (if schools are closed and so..)
-        normalized_probabilities = {}
-        for place, prob in probabilities_adjusted.items():
-            normalized_probabilities[place] = prob / total_probability
+        probabilities = list(probabilities_adjusted.values()) / \
+            np.linalg.norm(list(probabilities_adjusted.values()), ord=1)
 
-        choices = list(normalized_probabilities.keys())
-        probabilities = list(normalized_probabilities.values())
-
-        if sum(probabilities) != 1:
-            probabilities[-1] = 1 - sum(probabilities)
+        choices = list(probabilities_adjusted.keys())
 
         next_location = np.random.choice(choices, p=probabilities)
         # print(probabilities)

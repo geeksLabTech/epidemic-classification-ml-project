@@ -99,12 +99,12 @@ class PersonFactory():
 
     @classmethod
     def get_work_info(cls, data_source: DataSource, age: int, sex: int) -> tuple[bool, Optional[int]]:
-        if age < 16 or age > 75:
+        if age < 16 or age > 85:
             return False, None
 
         active = np.random.choice(
-            2, size=1, p=data_source.active_man_in_working_age)[0]
-        if active == 0:
+            2, size=1, p=data_source.active_people_in_working_age)[0]
+        if active == 1:
             return False, None
 
         work = True

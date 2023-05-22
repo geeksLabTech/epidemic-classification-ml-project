@@ -162,6 +162,7 @@ class World:
 
         if verbose >= 2:
             print(province)
+            print(total_neighborhoods)
 
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
@@ -197,11 +198,12 @@ class World:
         inhabitants_distribution = np.array(
             self.data_source.inhabitants_distribution)
         total_households_by_neighborhoods = int(
-            1000 / (np.argmax(inhabitants_distribution)+1))
+            700 / (np.argmax(inhabitants_distribution)+1))
         people_number_by_household = np.random.choice(a=possible_people_by_household,
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
-
+        print([sum(people_number_by_household[i])
+              for i in range(people_number_by_household.shape[0])])
         # Create household list from people_number_by_household
         households = [{'id': str(uuid.uuid4()), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': uuid.uuid4()} for i in range(
             people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]

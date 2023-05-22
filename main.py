@@ -13,7 +13,7 @@ def main():
     w = World('data.json')
 
     print("Generating Population")
-    # w.generate_population("pinar", n_processes=40)
+    w.generate_population("pinar", n_processes=40)
 
     print("Done!, Simmulating days now...")
 

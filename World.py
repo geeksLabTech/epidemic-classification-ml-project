@@ -295,7 +295,7 @@ class World:
                             assert person != None, 'Person cant be None'
                             pers = person.__dict__
                             pers['id'] = str(person.id)
-                            print(str(person.id))
+                            # print(str(person.id))
                             person_obj = SimP.load_serialized(pers)
                             person_obj.move(person,
                                             i, time, self.politics_deployed, 1, db)

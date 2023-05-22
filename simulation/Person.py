@@ -26,13 +26,13 @@ def get_random_element_from_collection():
 
         # Create a Person instance from the retrieved document
         random_p = random_element[0]
-        print(random_p)
+        # print(random_p)
         try:
             person = Person.load_serialized(random_p)
             flag = False
         except KeyError:
             pass
-        
+
     client.close()
 
     return person

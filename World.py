@@ -203,7 +203,7 @@ class World:
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
 
         # Create household list from people_number_by_household
-        households = [{'id': str(uuid.uuid4()), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': i} for i in range(
+        households = [{'id': str(uuid.uuid4()), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': uuid.uuid4()} for i in range(
             people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]
 
         # province_obj.households = [h.id for h in households]

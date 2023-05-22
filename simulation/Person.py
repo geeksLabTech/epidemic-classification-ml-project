@@ -15,14 +15,25 @@ def get_random_element_from_collection():
 
     # Get the count of documents in the collection
     count = collection.count_documents({})
-    # Generate a random index within the range of the document count
-    random_index = np.random.randint(0, count - 1)
+    flag = True
 
-    # Get the random element
-    random_element = list(collection.find().skip(random_index).limit(1))
+    while flag:
+        # Generate a random index within the range of the document count
+        random_index = np.random.randint(0, count - 1)
 
-    # Create a Person instance from the retrieved document
-    person = PersonModel(**random_element[0])
+        # Get the random element
+        random_element = list(collection.find().skip(random_index).limit(1))
+
+        # Create a Person instance from the retrieved document
+        random_p = random_element[0]
+        print(random_p)
+        try:
+            person = Person.load_serialized(random_p)
+            flag = False
+        except KeyError:
+            pass
+        
+    client.close()
 
     return person
 
@@ -173,7 +184,7 @@ class Person:
             probabilities[-1] = 1 - sum(probabilities)
 
         next_location = np.random.choice(choices, p=probabilities)
-        print(probabilities)
+        # print(probabilities)
         if next_location == 'random place':
             while True:
                 random_person = get_random_element_from_collection()
@@ -189,12 +200,17 @@ class Person:
             place_id = np.random.choice(a=places)
             self.current_location = place_id
 
-            print(f"moved to random place: {place_id}")
+            # print(f"moved to random place: {place_id}")
         elif self.current_location == self.__dict__[next_location]:
-            print(f"decided not to move, stayed at {self.current_location}")
+            pass
+            # print(f"decided not to move, stayed at {self.current_location}")
         else:
             self.current_location = self.__dict__[next_location]
-            print("Moved to", next_location)
+
+            # print("Moved to", next_location)
+
+        db_obj.current_place = self.current_location
+        db.save(db_obj)
 
         action = Action(destination=self.current_location, person=str(self.p_id),
                         day=day, time=time, simulation_id=sim_id)
@@ -230,5 +246,10 @@ class Person:
         person.school = serialized['school']
         person.neighborhood = serialized['neighborhood']
         person.household = serialized['household']
-        person.p_id = serialized['id']
+
+        try:
+            person.p_id = serialized['id']
+        except KeyError:
+            person.p_id = serialized['_id']
+
         return person

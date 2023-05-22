@@ -297,5 +297,5 @@ class World:
                             pers['id'] = str(person.id)
                             print(str(person.id))
                             person_obj = SimP.load_serialized(pers)
-                            person_obj.move(person_obj,
+                            person_obj.move(person,
                                             i, time, self.politics_deployed, 1, db)

@@ -146,7 +146,7 @@ class Person:
                 # economic activity is selected
                 self.economic_activity = np.random.choice(16, 1, act)[0]
 
-    def move(self, db_obj, day, time, politics_deployed, sim_id: str, db=SyncEngine(database='contact_simulation')):
+    def move(self, day, time, politics_deployed):
         probabilities = {
             "morning": {"household": 4, "workplace": 45, "neighborhood": 1, "random place": 5},
             "noon": {"household": 2, "workplace": 65, "neighborhood": 1, "random place": 5},
@@ -202,13 +202,7 @@ class Person:
             self.current_location = self.__dict__[next_location]
 
             # print("Moved to", next_location)
-
-        db_obj.current_place = self.current_location
-        db.save(db_obj)
-
-        action = Action(destination=self.current_location, person=str(self.p_id),
-                        day=day, time=time, simulation_id=sim_id)
-        db.save(action)
+        return self.current_location
 
     def serialize(self):
         serialized = {

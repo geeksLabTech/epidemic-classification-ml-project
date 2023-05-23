@@ -32,6 +32,7 @@ class Person(Model):
     last_place: Optional[str]
     current_place: Optional[str]
     province: str
+    interacted: Optional[list]
 
 
 class PersonFactory():
@@ -59,9 +60,8 @@ class PersonFactory():
         school = NULL_SCHOOL if school_index is None else schools[study_details][school_index]
 
         person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study, study_details=study_details, economic_activity=economic_activity, school=school,
-                        household=household['id'], workplace=NULL_WORKPLACE, neighborhood=str(household['neighborhood_id']), current_place=household['id'], last_place=household['id'], province=province)
-        # person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study)
-        
+                        household=household['id'], workplace=NULL_WORKPLACE, neighborhood=str(household['neighborhood_id']), current_place=household['id'], last_place=household['id'], province=province, interacted=[])
+
         return person
 
     @classmethod

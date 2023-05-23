@@ -5,9 +5,10 @@ from timeit import default_timer as timer
 
 
 import uuid
+from uuid import UUID
 
 import numpy as np
-# from multiprocessing import Pool
+from multiprocessing import Pool
 
 # from pathos import multiprocessing
 from simulation.Person import Person as SimP
@@ -19,8 +20,9 @@ from models.person import Person, PersonFactory
 from models.data_source import DataSource
 from models.population import Population
 from models.place import Place
+from models.action import Action
 
-from odmantic import SyncEngine
+from odmantic import SyncEngine, ObjectId
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
@@ -40,15 +42,15 @@ def create_people_by_household(prov_id: str, data_source: DataSource, household:
 
     for p in people:
 
-        if not db.find_one(Place, Place.place == p.school):
+        if p.school and not db.find_one(Place, Place.place == p.school):
             p1 = Place(place=p.school, province=prov_id)
             db.save(p1)
 
-        if not db.find_one(Place, Place.place == p.household):
+        if p.household and not db.find_one(Place, Place.place == p.household):
             p1 = Place(place=p.household, province=prov_id)
             db.save(p1)
 
-        if not db.find_one(Place, Place.place == p.neighborhood):
+        if p.neighborhood and not db.find_one(Place, Place.place == p.neighborhood):
             p1 = Place(place=p.neighborhood, province=prov_id)
             db.save(p1)
 
@@ -80,6 +82,11 @@ class World:
             self.data_source = DataSource(**contents)
 
         self.age_groups = np.array(self.data_source.age_groups)
+
+        self.mat = np.zeros((len(self.data_source.age_groups),
+                            len(self.data_source.age_groups)))
+
+        self.mat_ages = np.zeros(len(self.data_source.age_groups))
 
         self.total_population = 0
         self.db = SyncEngine(database='contact_simulation')
@@ -170,7 +177,7 @@ class World:
 
         if verbose >= 2:
             print(province)
-            print(total_neighborhoods)
+            # print(total_neighborhoods)
 
         # the neighborhood dictionary gets assigned to the province a list
         # a neighborhood is a list of households, denoting closeness between
@@ -225,9 +232,13 @@ class World:
         # for h in households:
         #     results.extend(create_people_by_household(self.data_source, h, schools))
         for h in households:
+            # with Pool(30) as p:
+            # p.apply_async(create_people_by_household,
+            #               args=(prov_id, self.data_source, h, schools))
             for i in create_people_by_household(prov_id,
                                                 self.data_source, h, schools):
-                person_list.append(str(i.id))
+                self.mat_ages[i.age_group] += 1
+                # person_list.append(str(i.id))
 
         del households
         del schools
@@ -313,8 +324,15 @@ class World:
                             pers['id'] = str(person.id)
                             # print(str(person.id))
                             person_obj = SimP.load_serialized(pers)
-                            person_obj.move(person,
-                                            i, time, self.politics_deployed, 1, db)
+                            place = person_obj.move(
+                                i, time, self.politics_deployed)
+
+                            person.current_place = place
+
+                            action = Action(destination=person_obj.current_location, person=person.id,
+                                            day=i, time=time, simulation_id=1)
+                            self.db.save(action)
+                            # self.db.save(person)
 
             print("Implementing contact reduction politics")
 
@@ -329,13 +347,48 @@ class World:
             # apply_politics(politics)
 
     def generate_contact_matrix(self, population_name: str, n_days: int):
-
-        mat = np.zeros(len(self.data_source.age_groups),
-                       len(self.data_source.age_groups))
-
+        people = self.db.find(Person)
         population = self.db.find_one(
             Population, Population.name == population_name)
+
         for province in population.provinces:
-            for day in range(1, n_days):
-                for place in db.find(Place, Place.province == province):
-                    pass
+            for day in range(1, n_days+1):
+                for time in ['morning', 'noon', 'afternoon', 'night']:
+                    for place in db.find(Place, Place.province == population.provinces[province]):
+                        actions = self.db.find(
+                            Action, Action.destination == place.place, Action.day == day, Action.time == time)
+                        people = [act.person for act in actions]
+                        if len(people) == 0:
+                            continue
+                        # print(people)
+                        interacted = np.random.choice(
+                            people, np.random.poisson(lam=(len(people)/3)))
+
+                        for p_id in interacted:
+
+                            person = self.db.find_one(
+                                Person, Person.id == ObjectId(p_id))
+
+                            if not person:
+                                continue
+
+                            person.interacted.extend(interacted)
+
+                            if time == 'night':
+                                self.add_contacts_to_matrix(
+                                    list(set(person.interacted)), person.age_group)
+                                person.interacted = []
+
+                            # print(person)
+                            self.db.save(person)
+
+        return self.mat
+
+    def add_contacts_to_matrix(self, interacted, age_group):
+
+        for p_id in interacted:
+
+            person = self.db.find_one(Person, Person.id == ObjectId(p_id))
+
+            self.mat[age_group][person.age_group] += 1
+            self.mat[person.age_group][age_group] += 1

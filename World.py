@@ -16,7 +16,7 @@ from simulation.Person import Person as SimP
 # from simulation.School import School
 # from simulation.workplace import Workplace, WorkplaceSize
 
-from models.person import Person, PersonFactory
+from models.person import Person, PersonFactory, create_parallel
 from models.data_source import DataSource
 from models.population import Population
 from models.place import Place
@@ -28,34 +28,6 @@ from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, U
 db = SyncEngine(database='contact_simulation')
 
 # -> list[Person]:
-
-
-def create_people_by_household(prov_id: str, data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
-    # First guarantee that there is at least one adult in the household
-    people = [PersonFactory.create(
-        data_source, household, schools, prov_id, True)]
-    temp = household['number_of_people'] - 1
-
-    if temp > 0:
-        people.extend([PersonFactory.create(
-            data_source, household, schools, prov_id) for i in range(temp)])
-
-    for p in people:
-
-        if p.school and not db.find_one(Place, Place.place == p.school):
-            p1 = Place(place=p.school, province=prov_id)
-            db.save(p1)
-
-        if p.household and not db.find_one(Place, Place.place == p.household):
-            p1 = Place(place=p.household, province=prov_id)
-            db.save(p1)
-
-        if p.neighborhood and not db.find_one(Place, Place.place == p.neighborhood):
-            p1 = Place(place=p.neighborhood, province=prov_id)
-            db.save(p1)
-
-    db.save_all(people)
-    return people
 
 
 class World:
@@ -105,6 +77,20 @@ class World:
         #     results = []
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
+
+    def create_people_by_household(self, prov_id: str, data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
+        # First guarantee that there is at least one adult in the household
+        people = [PersonFactory.create(
+            data_source, household, schools, prov_id, True)]
+        temp = household['number_of_people'] - 1
+
+        if temp > 0:
+            for i in range(temp):
+                people.append(PersonFactory.create(
+                    data_source, household, schools, prov_id))
+                self.mat_ages[people[-1].age_group] += 1
+
+        db.save_all(people)
 
     def get_age_group(self, age: int):
         """
@@ -196,12 +182,42 @@ class World:
             self.data_source.universities_per_province), 1)
 
         schools = {
-            PRIMARY_SCHOOL: [str(uuid.uuid4()) for _ in range(primary_schools_len)],
-            SECONDARY_SCHOOL: [str(uuid.uuid4()) for _ in range(secondary_schools_len)],
-            PRE_UNIVERSITY_SCHOOL: [str(uuid.uuid4()) for _ in range(pre_univ_schools_len)],
-            UNIVERSITY_SCHOOL: [str(uuid.uuid4())
-                                for _ in range(university_schools_len)]
+            PRIMARY_SCHOOL: [],
+            SECONDARY_SCHOOL: [],
+            PRE_UNIVERSITY_SCHOOL: [],
+            UNIVERSITY_SCHOOL: []
         }
+
+        places = []
+        list_ids = []
+        for _ in range(primary_schools_len):
+            p_id = str(uuid.uuid4())
+            list_ids.append(p_id)
+            places.append(Place(place=p_id, province=prov_id))
+
+        schools[PRIMARY_SCHOOL] = list_ids
+        list_ids = []
+        for _ in range(secondary_schools_len):
+            p_id = str(uuid.uuid4())
+            list_ids.append(p_id)
+            places.append(Place(place=p_id, province=prov_id))
+
+        schools[SECONDARY_SCHOOL] = list_ids
+        list_ids = []
+        for _ in range(pre_univ_schools_len):
+            p_id = str(uuid.uuid4())
+            list_ids.append(p_id)
+            places.append(Place(place=p_id, province=prov_id))
+
+        schools[PRE_UNIVERSITY_SCHOOL] = list_ids
+        list_ids = []
+        for _ in range(university_schools_len):
+            p_id = str(uuid.uuid4())
+            list_ids.append(p_id)
+            places.append(Place(place=p_id, province=prov_id))
+
+        schools[UNIVERSITY_SCHOOL] = list_ids
+
         # province_obj.schools = {
         #     PRIMARY_SCHOOL: [sc.id for sc in schools[PRIMARY_SCHOOL]],
         #     SECONDARY_SCHOOL: [sc.id for sc in schools[SECONDARY_SCHOOL]],
@@ -220,8 +236,15 @@ class World:
         print([sum(people_number_by_household[i])
               for i in range(people_number_by_household.shape[0])])
         # Create household list from people_number_by_household
-        households = [{'id': str(uuid.uuid4()), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': uuid.uuid4()} for i in range(
-            people_number_by_household.shape[0]) for j in range(people_number_by_household.shape[1])]
+        households = []
+        for i in range(people_number_by_household.shape[0]):
+            neigh_id = uuid.uuid4()
+            places.append(Place(place=str(neigh_id), province=prov_id))
+            for j in range(people_number_by_household.shape[1]):
+                h_id = uuid.uuid4()
+                places.append(Place(place=str(h_id), province=prov_id))
+                households.append({'id': str(
+                    h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
         # province_obj.households = [h.id for h in households]
 
@@ -235,10 +258,10 @@ class World:
             # with Pool(30) as p:
             # p.apply_async(create_people_by_household,
             #               args=(prov_id, self.data_source, h, schools))
-            for i in create_people_by_household(prov_id,
-                                                self.data_source, h, schools):
-                self.mat_ages[i.age_group] += 1
-                # person_list.append(str(i.id))
+            self.create_people_by_household(
+                prov_id, self.data_source, h, schools)
+
+            # person_list.append(str(i.id))
 
         del households
         del schools
@@ -248,17 +271,14 @@ class World:
         start_time = timer()
         people_that_work = [i for i in self.db.find(
             Person, Person.work == True)]
+
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
-            province, len(people_that_work), people_that_work)
+            province, prov_id, len(people_that_work), people_that_work)
         # province_obj.workplaces = [w.id for w in workplaces]
 
-        for p in people_that_work:
-            if not db.find_one(Place, Place.place == p.workplace):
-                p1 = Place(place=p.workplace, province=p.province)
-                db.save(p1)
-
         self.db.save_all(people_that_work)
+        self.db.save_all(places)
 
         print('Finished workers in ', timer() - start_time)
 
@@ -272,7 +292,7 @@ class World:
             print("Finished:", province)
         # return prov_id
 
-    def assign_workplaces_to_people(self, province: str, total_workers: int, people_that_works: list[Person]):
+    def assign_workplaces_to_people(self, province: str, prov_id: str, total_workers: int, people_that_works: list[Person]):
 
         workers_count = 0
         workplace_size_by_people = np.random.choice(
@@ -280,15 +300,17 @@ class World:
 
         people_mask = np.zeros(len(people_that_works))
 
+        places = []
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
             wp = str(uuid.uuid4())
+            places.append(Place(place=wp, province=prov_id))
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp
                     people_mask[i] = 1
                     workers_count += 1
-
+        self.db.save_all(places)
         return people_that_works
 
     def run_simulation(self, population_name: str, n_days: int = 2, n_processes=12):

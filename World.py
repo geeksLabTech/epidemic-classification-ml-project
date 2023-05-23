@@ -23,6 +23,7 @@ from simulation.Person import Person as SimP
 from models.person import Person, PersonFactory
 from models.data_source import DataSource
 from models.population import Population
+from models.places import Place
 
 from data_loader import DataLoader
 from database.mongodb_client import MongoCRUD

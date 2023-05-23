@@ -7,7 +7,7 @@ from models.data_source import DataSource
 from uuid import UUID
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
-from modeld.places import Place
+from models.place import Place
 from beanie import Document, Link
 
 

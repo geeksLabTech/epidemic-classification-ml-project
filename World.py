@@ -1,19 +1,14 @@
 import json
-from time import sleep
-import datetime
+
 # from data_distribution import *
 from timeit import default_timer as timer
-from typing import List
-from unittest import result
-from asyncpg import Pool
-from beanie import WriteRules
+
 
 import uuid
-from uuid import UUID
 
 import numpy as np
 # from multiprocessing import Pool
-import multiprocessing
+
 # from pathos import multiprocessing
 from simulation.Person import Person as SimP
 # from simulation.Household import Household
@@ -23,11 +18,9 @@ from simulation.Person import Person as SimP
 from models.person import Person, PersonFactory
 from models.data_source import DataSource
 from models.population import Population
-from models.places import Place
+from models.place import Place
 
-from data_loader import DataLoader
-from database.mongodb_client import MongoCRUD
-from odmantic import SyncEngine, query, ObjectId
+from odmantic import SyncEngine
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')

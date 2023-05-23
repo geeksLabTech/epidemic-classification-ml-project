@@ -30,7 +30,7 @@ def main():
     # build_graph()
     
     # print('done graph')
-    run_simulation()
+    run_simulation(w)
     # w.run_simulation("pinar", 100)
     # print("Building Matrix")
     # labels = [str(i[0])+"-"+str(i[1]) for i in dl.age_groups]

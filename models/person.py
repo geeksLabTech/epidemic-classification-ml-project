@@ -7,7 +7,7 @@ from models.data_source import DataSource
 from uuid import UUID
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
-
+from modeld.places import Place
 from beanie import Document, Link
 
 
@@ -61,6 +61,7 @@ class PersonFactory():
         person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study, study_details=study_details, economic_activity=economic_activity, school=school,
                         household=household['id'], workplace=NULL_WORKPLACE, neighborhood=str(household['neighborhood_id']), current_place=household['id'], last_place=household['id'], province=province)
         # person = Person(age=age, age_group=age_group, sex=sex, work=work, study=study)
+        
         return person
 
     @classmethod

@@ -44,6 +44,20 @@ def create_people_by_household(prov_id: str, data_source: DataSource, household:
         people.extend([PersonFactory.create(
             data_source, household, schools, prov_id) for i in range(temp)])
 
+    for p in people:
+
+        if not db.find_one(Place, Place.place == p.school):
+            p1 = Place(place=p.school, province=prov_id)
+            db.save(p1)
+
+        if not db.find_one(Place, Place.place == p.household):
+            p1 = Place(place=p.household, province=prov_id)
+            db.save(p1)
+
+        if not db.find_one(Place, Place.place == p.neighborhood):
+            p1 = Place(place=p.neighborhood, province=prov_id)
+            db.save(p1)
+
     db.save_all(people)
     return people
 
@@ -233,6 +247,12 @@ class World:
         people_that_work = self.assign_workplaces_to_people(
             province, len(people_that_work), people_that_work)
         # province_obj.workplaces = [w.id for w in workplaces]
+
+        for p in people_that_work:
+            if not db.find_one(Place, Place.place == p.workplace):
+                p1 = Place(place=p.workplace, province=p.province)
+                db.save(p1)
+
         self.db.save_all(people_that_work)
 
         print('Finished workers in ', timer() - start_time)
@@ -301,3 +321,27 @@ class World:
                             person_obj = SimP.load_serialized(pers)
                             person_obj.move(person,
                                             i, time, self.politics_deployed, 1, db)
+
+            print("Implementing contact reduction politics")
+
+            politics = {
+                "close_shcools": {"school": 0},
+                "mid_shcools": {"school": 0.5},
+                "reduce_movility": {"neighborhood": 0.6, "random_place": 0.3},
+                "close_workplaces": {"workplace": 0.1},
+                "social_awareness": {key: 0.2 for key in self.politics_deployed.keys()}
+            }
+
+            # apply_politics(politics)
+
+    def generate_contact_matrix(self, population_name: str, n_days: int):
+
+        mat = np.zeros(len(self.data_source.age_groups),
+                       len(self.data_source.age_groups))
+
+        population = self.db.find_one(
+            Population, Population.name == population_name)
+        for province in population.provinces:
+            for day in range(1, n_days):
+                for place in db.find(Place, Place.province == province):
+                    pass

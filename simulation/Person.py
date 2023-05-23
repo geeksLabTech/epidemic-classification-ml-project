@@ -240,6 +240,7 @@ class Person:
         person.school = serialized['school']
         person.neighborhood = serialized['neighborhood']
         person.household = serialized['household']
+        person.province = serialized['province']
 
         try:
             person.p_id = serialized['id']

@@ -17,7 +17,7 @@ def run_step_of_simulation(graph : Graph,db: SyncEngine ,matrix , w : World):
     # population_Collection = db["Person"
     population = db.find(Person)
     for person in population:
-        move = build_move_distribution(person.last_place,person.current_place,graph)
+        move = build_move_distribution(person.last_place,person.current_place,graph,person.study,person.work)
         # print(type(move), ' es un node')
         # print(move in graph.nodes)
         # print(type(person))
@@ -29,7 +29,7 @@ def run_step_of_simulation(graph : Graph,db: SyncEngine ,matrix , w : World):
     return get_contact_matrix(graph,population,matrix,w)
 
 
-def build_move_distribution(last_position:str,actual_position:str,graph:Graph) -> Node:
+def build_move_distribution(last_position:str,actual_position:str,graph:Graph,isSchool,isWork) -> Node:
     node_actual = graph.id_nodes[actual_position]
     possible_next_moves = graph.nodes[node_actual]
     move_list = [] 
@@ -39,22 +39,39 @@ def build_move_distribution(last_position:str,actual_position:str,graph:Graph) -
     for i in range (len(possible_next_moves)):
         move_list.append(possible_next_moves[i])
         if possible_next_moves[i].type == 'H':
-            if not graph.id_nodes[last_position].type == 'H':
-                if last_position == 'W':
-                    prob_list[i] = 0.5
-                else :
-                    prob_list[i] = 0.4
-            else:
-                prob_list[i] = 0.3
-        elif possible_next_moves[i].type == 'W':
-            if not graph.id_nodes[last_position].type== 'W':
-                if last_position == 'H':
-                    prob_list[i] = 0.5
-                else :
-                    prob_list[i] = 0.4
-            else:
+            if not isSchool and not isWork:
                 prob_list[i] = 0.4
-        elif possible_next_moves[i] == 'N' or possible_next_moves[i] == 'S':
+            elif not graph.id_nodes[last_position].type == 'H' :
+                if graph.id_nodes[last_position].type == 'W' or graph.id_nodes[last_position].type == 'S':
+                    prob_list[i] = 0.4
+                else :
+                    prob_list[i] = 0.2
+            else:
+                prob_list[i] = 0.2
+
+        elif possible_next_moves[i].type == 'W':
+            if not isWork:
+                prob_list[i] = 0.1
+        
+            elif isWork and not graph.id_nodes[last_position].type== 'W':
+                if  graph.id_nodes[last_position].type  == 'H':
+                    prob_list[i] = 0.3
+                else :
+                    prob_list[i] = 0.2
+            else:
+                prob_list[i] = 0.1
+        elif possible_next_moves[i] == 'S':
+            if not isSchool:
+                prob_list[i] = 0.1
+            elif isSchool and not graph.id_nodes[last_position].type== 'S':
+                if  graph.id_nodes[last_position].type  == 'H':
+                    prob_list[i] = 0.4
+                else :
+                    prob_list[i] = 0.2
+            else:
+                prob_list[i] = 0.2
+
+        elif possible_next_moves[i] == 'N' :
             prob_list[i] = 0.1
         else:
             prob_list[i] = 0.1
@@ -80,30 +97,48 @@ def build_move_distribution(last_position:str,actual_position:str,graph:Graph) -
 
                 
 def get_contact_matrix(graph: Graph,population,matrix,w : World):
-    print(len(graph.nodes.keys()))
+    # print('total nodes, ', len(graph.nodes.keys()))
+    z =0
     for node in graph.nodes.keys():
+        # print(type(node))
+        # print(z)
+        # print('cant visitors', len(node.visitors), 'tipo', node.type)
+
+        # if z == len(graph.nodes) - 1 :
+        #     print('estoy en ultimo nodo')
+        # print(node.type, ' pa ver')
         if node.visitors == []:
             continue
         if not node.type == "H":
-            number_contact = len(node.visitors)/3
-            get_normal_distribution = np.arange(0,node.visitors)
-            prob = np.array(get_normal_distribution) / np.linalg.norm(get_normal_distribution, ord=1)
-            contacts = np.random.choice(a = len(node.visitors),p = prob, size = int(number_contact))
+            
+            number_contact = len(node.visitors)/10
+            
+
+            get_normal_distribution = np.arange(0,len(node.visitors))
+            # prob = np.array(get_normal_distribution) / np.linalg.norm(get_normal_distribution, ord=1)
+            contacts = np.random.choice(a = len(node.visitors), size = int(number_contact))
             for i in range(len(contacts)):
+            #    if z == 292450:
+
+            #     print('mmmm', i, len(contacts))
                for j in range(i+1,len(contacts)): 
                     matrix[w.get_age_group(node.visitors[contacts[i]].age),w.get_age_group(node.visitors[contacts[j]].age)] += 1
                     matrix[w.get_age_group(node.visitors[contacts[j]].age),w.get_age_group(node.visitors[contacts[i]].age)] += 1
-                      
+                 
         else:
+            # if z == 292449:
+            #     print('murio aki')
+            # print('comienza else')
+            # print(len(node.visitors))
             for i in range(len(node.visitors)):
                 for j in range(i+1,len(node.visitors)):
-                    # print(type(node.visitors[0]), ' a ver ')
-                    # print(type(node.visitors[-1]), 'mmm')
-                    # print(node.visitors[i],'uno')
-
+                   
                     matrix[w.get_age_group(node.visitors[i].age),w.get_age_group(node.visitors[j].age)] += 1
                     matrix[w.get_age_group(node.visitors[j].age),w.get_age_group(node.visitors[i].age)] += 1
-        print(matrix)
+        z+=1
+    print('sali del for')
+    # print(matrix)
+
                 
     return matrix
     

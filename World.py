@@ -321,6 +321,7 @@ class World:
             n_days (int, optional): number of days to simmulate, the more days more accurate should be. Defaults to 2.
             n_processes (int, optional): number of processes to concurrenlty run. Defaults to 12.
         """
+        start_time = timer()
         population = self.db.find_one(
             Population, Population.name == population_name)
 
@@ -366,6 +367,7 @@ class World:
                 "social_awareness": {key: 0.2 for key in self.politics_deployed.keys()}
             }
 
+            print(f"Finished in {timer() - start_time}")
             # apply_politics(politics)
 
     def generate_contact_matrix(self, population_name: str, n_days: int):

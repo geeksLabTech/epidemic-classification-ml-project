@@ -1,5 +1,5 @@
 from odmantic import Model
 
-class Province(Model):
+class Place(Model):
+    place: str
     province: str
-    people: list

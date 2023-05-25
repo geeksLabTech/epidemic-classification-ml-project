@@ -55,10 +55,18 @@ class World:
 
         self.age_groups = np.array(self.data_source.age_groups)
 
-        self.mat = np.zeros((len(self.data_source.age_groups),
-                            len(self.data_source.age_groups)))
+        self.mat = {
+            "work": np.zeros((len(self.data_source.age_groups),
+                              len(self.data_source.age_groups))),
+            "school": np.zeros((len(self.data_source.age_groups),
+                                len(self.data_source.age_groups))),
+            "neighborhood": np.zeros((len(self.data_source.age_groups),
+                                      len(self.data_source.age_groups))),
+            "house": np.zeros((len(self.data_source.age_groups),
+                               len(self.data_source.age_groups)))
+        }
 
-        self.mat_ages = np.zeros(len(self.data_source.age_groups))
+        self.mat_ages = np.ones(len(self.data_source.age_groups))
 
         self.total_population = 0
         self.db = SyncEngine(database='contact_simulation')
@@ -193,28 +201,32 @@ class World:
         for _ in range(primary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRIMARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(secondary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[SECONDARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(pre_univ_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRE_UNIVERSITY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(university_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[UNIVERSITY_SCHOOL] = list_ids
 
@@ -239,10 +251,12 @@ class World:
         households = []
         for i in range(people_number_by_household.shape[0]):
             neigh_id = uuid.uuid4()
-            places.append(Place(place=str(neigh_id), province=prov_id))
+            places.append(Place(place=str(neigh_id),
+                          province=prov_id, clasification="neighborhood"))
             for j in range(people_number_by_household.shape[1]):
                 h_id = uuid.uuid4()
-                places.append(Place(place=str(h_id), province=prov_id))
+                places.append(
+                    Place(place=str(h_id), province=prov_id, clasification="house"))
                 households.append({'id': str(
                     h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
@@ -304,7 +318,8 @@ class World:
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
             wp = str(uuid.uuid4())
-            places.append(Place(place=wp, province=prov_id))
+            places.append(
+                Place(place=wp, province=prov_id, clasification='work'))
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp
@@ -335,6 +350,7 @@ class World:
             # night:
 
             for i in range(1, n_days):
+                print(i)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
 
                     for prov in provinces:
@@ -355,7 +371,7 @@ class World:
                             action = Action(destination=person_obj.current_location, person=person.id,
                                             day=i, time=time, simulation_id=1)
                             self.db.save(action)
-                            # self.db.save(person)
+                            self.db.save(person)
 
             print("Implementing contact reduction politics")
 
@@ -371,12 +387,13 @@ class World:
             # apply_politics(politics)
 
     def generate_contact_matrix(self, population_name: str, n_days: int):
-        people = self.db.find(Person)
+
         population = self.db.find_one(
             Population, Population.name == population_name)
 
         for province in population.provinces:
             for day in range(1, n_days+1):
+                print(day)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
                     for place in db.find(Place, Place.province == population.provinces[province]):
                         actions = self.db.find(
@@ -396,11 +413,12 @@ class World:
                             if not person:
                                 continue
 
-                            person.interacted.extend(interacted)
+                            person.interacted.extend(
+                                list(zip(interacted, [place.clasification] * len(interacted))))
 
                             if time == 'night':
                                 self.add_contacts_to_matrix(
-                                    list(set(person.interacted)), person.age_group)
+                                    person.interacted, person.age_group)
                                 person.interacted = []
 
                             # print(person)
@@ -410,9 +428,9 @@ class World:
 
     def add_contacts_to_matrix(self, interacted, age_group):
 
-        for p_id in interacted:
+        for p_id, place in interacted:
 
             person = self.db.find_one(Person, Person.id == ObjectId(p_id))
 
-            self.mat[age_group][person.age_group] += 1
-            self.mat[person.age_group][age_group] += 1
+            self.mat[place][age_group][person.age_group] += 1
+            self.mat[place][person.age_group][age_group] += 1

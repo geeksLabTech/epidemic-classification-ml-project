@@ -6,9 +6,6 @@ from data_loader import DataLoader
 
 
 from models.person import Person
-from models.household import Household
-from models.school import School
-from models.workplace import Workplace
 import asyncio
 from simulation.places_graph import build_graph
 from simulation.simulationv2 import run_simulation

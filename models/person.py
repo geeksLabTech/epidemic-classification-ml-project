@@ -1,15 +1,9 @@
 
-from enum import Enum
-from typing import Optional, Union
-from odmantic import AIOEngine, Model, Reference
-from sklearn import neighbors
+from odmantic import Model
+from typing import Optional
 from models.data_source import DataSource
-from uuid import UUID
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
-
-
-
 
 # class Sex(Enum):
 #     Male = 0
@@ -29,8 +23,8 @@ class Person(Model):
     school: Optional[str]
     workplace: Optional[str]
     neighborhood: str
-    last_place: Optional[str]
-    current_place: Optional[str]
+    last_place: str
+    current_place: str
     province: str
     interacted: Optional[list]
 

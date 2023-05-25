@@ -9,7 +9,7 @@ import pickle
 from pathlib import Path
 from World import World
 
-def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Workmatrix,Housematrix , w : World):
+def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Workmatrix,Housematrix , w : World, save_matrices = True):
         
     population = db.find(Person)
     for person in population:
@@ -18,7 +18,14 @@ def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Wo
         move.visitors.append(person)
         # print(type(move.visitors[-1]), 'que tu ere')
     print('termine esto')
-    return get_contact_matrix(graph,population,matrix,Schoolmatrix,Workmatrix,Housematrix,w)
+    full_matrix, school_matrix, work_matrix, house_matrix = get_contact_matrix(graph,population,matrix,Schoolmatrix,Workmatrix,Housematrix,w)
+    if save_matrices:
+        np.save('full_matrix', full_matrix)
+        np.save('school_matrix', school_matrix)
+        np.save('work_matrix', work_matrix)
+        np.save('house_matrix', house_matrix)
+        
+    return full_matrix, school_matrix, work_matrix, house_matrix
 
 
 def build_move_distribution(last_position:str,actual_position:str,graph:Graph,isSchool,isWork) -> Node:
@@ -88,7 +95,7 @@ def update_visitors(person:Person,current_place:Node):
 
 
 
-def get_contact_matrix(graph: Graph,population,matrix,Schoolmatrix,Workmatrix,Housematrix,w : World):
+def get_contact_matrix(graph: Graph,population,matrix,Schoolmatrix: np.ndarray,Workmatrix,Housematrix,w : World):
     z =0
     for node in graph.nodes.keys():
         if node.visitors == []:

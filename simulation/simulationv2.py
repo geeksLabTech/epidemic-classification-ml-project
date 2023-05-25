@@ -8,6 +8,7 @@ from .places_graph import Graph,build_graph,Node
 import pickle
 from pathlib import Path
 from World import World
+from sklearn.preprocessing import StandardScaler
 
 def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Workmatrix,Housematrix , w : World, save_matrices = True):
         
@@ -100,7 +101,6 @@ def get_contact_matrix(graph: Graph,population,matrix,Schoolmatrix: np.ndarray,W
     for node in graph.nodes.keys():
         if node.visitors == []:
             continue
-        print(node.type , 'mm', len(node.visitors), ' mmm')
         if not node.type == "H":
             
             number_contact = len(node.visitors)/10
@@ -150,15 +150,12 @@ def run_simulation(world : World,use_cache=True):
         graph = build_graph()
         save_graph_to_file(graph)
         print('done graph')
-
-    
-        
     M =  np.zeros((14,14))
     SM = np.zeros((14,14))
     WM = np.zeros((14,14))
     HM = np.zeros((14,14))
     for i in range(2):
-        print(i)
+        
         M,SM,WM,HM = run_step_of_simulation(graph,db,M,SM,WM,HM ,world)
         print('School contacts Matrix')
         print(SM)
@@ -166,6 +163,8 @@ def run_simulation(world : World,use_cache=True):
         print(WM)
         print('House contacts Matrix')
         print(HM)
+    
+    
 
 
         

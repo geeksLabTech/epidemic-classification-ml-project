@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import random
 import numpy as np
 from odmantic import SyncEngine
+from models.contact_matrix import ContactMatrix
 from models.population import Population
 from models.person import Person
 from .places_graph import Graph,build_graph,Node
@@ -157,6 +158,7 @@ def normalize_matrice(graph: Graph,matrix):
     return matrix
 def run_simulation(world : World,use_cache=True,save_matrices = True):
     db = SyncEngine(database='contact_simulation')
+    
     # use_cache = False
     if use_cache and Path('graph.obj').is_file():
         graph = load_graph_from_file()
@@ -166,22 +168,26 @@ def run_simulation(world : World,use_cache=True,save_matrices = True):
         graph = build_graph(world)
         save_graph_to_file(graph)
         print('done graph')
-    full_matrix=  np.zeros((14,14))
-    school_matrix=np.zeros((14,14))
+    full_matrix =  np.zeros((14,14))
+    school_matrix =np.zeros((14,14))
     work_matrix= np.zeros((14,14))
     house_matrix=np.zeros((14,14))
     for i in range(10):
+        full_matrix,school_matrix,work_matrix,house_matrix = run_step_of_simulation(graph,db,full_matrix,school_matrix,work_matrix,house_matrix,world)
         if save_matrices and (i%2 == 0 or i == 0):
-            full_matrix,school_matrix,work_matrix,house_matrix = run_step_of_simulation(graph,db,full_matrix,school_matrix,work_matrix,house_matrix,world)
-            full_matrix = normalize_matrice(graph,full_matrix)
-            school_matrix= normalize_matrice(graph,school_matrix)
-            work_matrix=normalize_matrice(graph,work_matrix)
-            house_matrix = normalize_matrice(graph,house_matrix)
-        
-            pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-            pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-            pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-            pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+            save_full_matrix = normalize_matrice(graph,full_matrix)
+            save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= list(save_full_matrix),simulation_type='graph')
+            save_school_matrix= normalize_matrice(graph,school_matrix)
+            save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= list(save_school_matrix),simulation_type='graph')
+            save_work_matrix=normalize_matrice(graph,work_matrix)
+            save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= list(save_work_matrix),simulation_type='graph')
+            save_house_matrix = normalize_matrice(graph,house_matrix)
+            save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= list(save_house_matrix),simulation_type='graph')
+            
+            # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
+            # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
+            # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
+            # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
         print(i)
     print('termine')
     

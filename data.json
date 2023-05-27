@@ -1,6 +1,9 @@
 {
-  "Pinar del Rio": 583,
-
+  
+  "provinces_population": {
+    "Pinar del Rio": 583
+  },
+  
   "total_employees": 47100,
 
   "total_population": 11181595,

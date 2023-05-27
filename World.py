@@ -11,11 +11,11 @@ from odmantic import ObjectId, SyncEngine
 from constants import (PRE_UNIVERSITY_SCHOOL, PRIMARY_SCHOOL, SECONDARY_SCHOOL,
                        UNIVERSITY_SCHOOL)
 from models.action import Action
-from models.data_source import DataSource
 from models.person import Person, PersonFactory, create_parallel
 from models.place import Place
 from models.population import Population
 # from pathos import multiprocessing
+from data_loader import DataLoader
 from simulation.Person import Person as SimP
 
 # from simulation.Household import Household
@@ -23,8 +23,8 @@ from simulation.Person import Person as SimP
 # from simulation.workplace import Workplace, WorkplaceSize
 
 
-
 db = SyncEngine(database='contact_simulation')
+
 
 class World:
     """Environment class where are stored all agents and data for simulation
@@ -42,12 +42,12 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, json_file_path: str):
+    def __init__(self, json_file_path: str='data.josn'):
         """initialization function
         """
-        with open(json_file_path, 'r') as j:
-            contents = json.loads(j.read())
-            self.data_source = DataSource(**contents)
+
+        self.data_source = DataLoader(json_file_path)
+        self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)
 
@@ -82,7 +82,7 @@ class World:
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
 
-    def create_people_by_household(self, prov_id: str, data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
+    def create_people_by_household(self, prov_id: str, data_source: DataLoader, household: dict, schools: dict[str, list[UUID]]):
         # First guarantee that there is at least one adult in the household
         people = [PersonFactory.create(
             data_source, household, schools, prov_id, True)]

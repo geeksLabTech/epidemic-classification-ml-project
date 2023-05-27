@@ -110,14 +110,14 @@ class Person:
 
         # pre-universitary is assigned according to the distribution
         elif self.age > 15 and self.age < 18:
-            if np.random.random() < data_source.enrollment_distribution[2]/data_source.total_enrrollment:
+            if np.random.random() < data_source.enrollment_distribution[2]/data_source.total_enrollment:
                 self.study_details = 'pre_univ'
                 self.study = True
 
         # for university, in case of a person being over 30 years
         # the probability of studying is gradually reduced
         elif self.age > 18:
-            population_coef = data_source.total_enrrollment
+            population_coef = data_source.total_enrollment
             if self.age > 30:
                 population_coef *= self.age/10
             if np.random.random() < data_source.enrollment_distribution[3]/population_coef:

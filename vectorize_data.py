@@ -1,5 +1,4 @@
 from sklearn.feature_extraction import DictVectorizer
-from data_loader import DataLoader
 import json
 import numpy as np
 
@@ -32,6 +31,8 @@ def vetorize_data(fp='data.json'):
         if type(data[key]) is type(list()):
             data_to_append.extend(make_vector(data[key]))
         elif type(data[key]) == type({}):
+            if key == 'provinces_population':
+                break
             data_to_append.extend(make_vector(data[key]))
         else:
             final_dict[key] = data[key]

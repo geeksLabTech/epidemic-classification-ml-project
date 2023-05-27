@@ -1,3 +1,5 @@
+from sklearn.feature_extraction import DictVectorizer
+import numpy as np
 import json
 
 
@@ -42,7 +44,7 @@ class DataLoader:
                 f"Provided JSON is invalid, fields {missing} were expected but not found")
 
         self.total_population = data['total_population']
-        self.total_enrrollment = data['total_enrollment']
+        self.total_enrollment = data['total_enrollment']
 
         self.distribution_by_age_groups = data['distribution_by_age_groups']
         self.age_groups = data['age_groups']
@@ -50,6 +52,7 @@ class DataLoader:
 
         self.enrollment_distribution = data['enrollment_distribution']
 
+        self.active_people_in_working_age = data['active_people_in_working_age']
         self.active_man_in_working_age = data['active_man_in_working_age']
         self.active_woman_in_working_age = data['active_woman_in_working_age']
         self.man_distribution_by_economic_activity = data['man_distribution_by_economic_activity']
@@ -66,3 +69,45 @@ class DataLoader:
 
         self.provinces_population = data['provinces_population']
         self.inhabitants_distribution = data['inhabitants_distribution']
+
+    def make_vector(self, dt):
+        data = []
+
+        if type(dt) == type([]):
+            for i in dt:
+                data.extend(self.make_vector(i))
+        elif type(dt) == type({}):
+            for key in dt:
+                data.extend(make_vector(dt[key]))
+        else:
+            return [dt]
+
+        return data
+
+    def vectorize_data(self):
+
+        data = self.__dict__
+        print(data)
+
+        data_to_append = []
+
+        final_dict = {}
+
+        for key in data.keys():
+            if key == 'provinces_population':
+                continue
+
+            if type(data[key]) is type(list()):
+                data_to_append.extend(self.make_vector(data[key]))
+            elif type(data[key]) == type({}):
+                data_to_append.extend(self.make_vector(data[key]))
+            else:
+                final_dict[key] = data[key]
+        v = DictVectorizer(sparse=False)
+        X = v.fit_transform(final_dict)
+
+        X = np.append(X[0], data_to_append, axis=0)
+
+        print(X)
+
+        return X

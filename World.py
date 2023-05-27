@@ -1,34 +1,30 @@
 import json
-
+import uuid
+from multiprocessing import Pool
 # from data_distribution import *
 from timeit import default_timer as timer
-
-
-import uuid
 from uuid import UUID
 
 import numpy as np
-from multiprocessing import Pool
+from odmantic import ObjectId, SyncEngine
 
+from constants import (PRE_UNIVERSITY_SCHOOL, PRIMARY_SCHOOL, SECONDARY_SCHOOL,
+                       UNIVERSITY_SCHOOL)
+from models.action import Action
+from models.data_source import DataSource
+from models.person import Person, PersonFactory, create_parallel
+from models.place import Place
+from models.population import Population
 # from pathos import multiprocessing
 from simulation.Person import Person as SimP
+
 # from simulation.Household import Household
 # from simulation.School import School
 # from simulation.workplace import Workplace, WorkplaceSize
 
-from models.person import Person, PersonFactory, create_parallel
-from models.data_source import DataSource
-from models.population import Population
-from models.place import Place
-from models.action import Action
 
-from odmantic import SyncEngine, ObjectId
-from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
-
-# -> list[Person]:
-
 
 class World:
     """Environment class where are stored all agents and data for simulation

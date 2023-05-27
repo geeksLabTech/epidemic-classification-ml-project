@@ -1,9 +1,8 @@
 import datetime
+
 import pandas as pd
 
 from models.person import Person
-import pandas as pd
-
 from World import World
 
 

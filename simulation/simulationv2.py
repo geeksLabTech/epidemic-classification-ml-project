@@ -9,6 +9,7 @@ import pickle
 from pathlib import Path
 from World import World
 from sklearn.preprocessing import StandardScaler
+import pandas as pd
 
 def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Workmatrix,Housematrix , w : World, save_matrices = True):
         
@@ -21,10 +22,14 @@ def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Wo
     print('termine esto')
     full_matrix, school_matrix, work_matrix, house_matrix = get_contact_matrix(graph,population,matrix,Schoolmatrix,Workmatrix,Housematrix,w)
     if save_matrices:
-        np.save('full_matrix', full_matrix)
-        np.save('school_matrix', school_matrix)
-        np.save('work_matrix', work_matrix)
-        np.save('house_matrix', house_matrix)
+        pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
+        pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
+        pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
+        pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+        # np.save('full_matrix', full_matrix)
+        # np.save('school_matrix', school_matrix)
+        # np.save('work_matrix', work_matrix)
+        # np.save('house_matrix', house_matrix)
         
     return full_matrix, school_matrix, work_matrix, house_matrix
 
@@ -139,7 +144,18 @@ def load_graph_from_file() -> Graph:
         return pickle.load(file)
 
 
-def run_simulation(world : World,use_cache=True):
+
+def normalize_matrice(graph: Graph,matrix):
+    total_people_by_age_group = [graph.age_dict[i] for i in graph.age_dict]
+    for i in range(len(matrix)):
+        to_sum = total_people_by_age_group[i]
+        summed_values = np.array([to_sum + total_people_by_age_group[j] for j in range(len(total_people_by_age_group))])
+        matrix[i] = matrix[i] / summed_values
+    
+    # print('resultado al dividir', matrix)
+    # print()
+    return matrix
+def run_simulation(world : World,use_cache=True,save_matrices = True):
     db = SyncEngine(database='contact_simulation')
     # use_cache = False
     if use_cache and Path('graph.obj').is_file():
@@ -147,22 +163,27 @@ def run_simulation(world : World,use_cache=True):
         print('Graph loaded with pickle')
     else:
         print('Starting graph creation')
-        graph = build_graph()
+        graph = build_graph(world)
         save_graph_to_file(graph)
         print('done graph')
-    M =  np.zeros((14,14))
-    SM = np.zeros((14,14))
-    WM = np.zeros((14,14))
-    HM = np.zeros((14,14))
-    for i in range(2):
+    full_matrix=  np.zeros((14,14))
+    school_matrix=np.zeros((14,14))
+    work_matrix= np.zeros((14,14))
+    house_matrix=np.zeros((14,14))
+    for i in range(10):
+        if save_matrices and (i%2 == 0 or i == 0):
+            full_matrix,school_matrix,work_matrix,house_matrix = run_step_of_simulation(graph,db,full_matrix,school_matrix,work_matrix,house_matrix,world)
+            full_matrix = normalize_matrice(graph,full_matrix)
+            school_matrix= normalize_matrice(graph,school_matrix)
+            work_matrix=normalize_matrice(graph,work_matrix)
+            house_matrix = normalize_matrice(graph,house_matrix)
         
-        M,SM,WM,HM = run_step_of_simulation(graph,db,M,SM,WM,HM ,world)
-        print('School contacts Matrix')
-        print(SM)
-        print('Work contacts Matrix')
-        print(WM)
-        print('House contacts Matrix')
-        print(HM)
+            pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
+            pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
+            pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
+            pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+        print(i)
+    print('termine')
     
     
 

@@ -28,11 +28,11 @@ def main():
     w.generate_contact_matrix("pinar", n_days)
 
     labels = [str(i[0])+"-"+str(i[1]) for i in w.data_source.age_groups]
-
+    
     final_mat = w.mat/(2*n_days)
     final_mat = final_mat / w.mat_ages
     # final_mat = (final_mat.transpose()) / w.mat_ages
-
+    
     df = pd.DataFrame(final_mat, columns=labels)
     df.to_csv("matrix.csv")
 

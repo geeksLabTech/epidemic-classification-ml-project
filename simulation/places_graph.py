@@ -5,6 +5,7 @@ from models.population import Population
 from models.person import Person
 from uuid import UUID, uuid4
 from typing import Self
+from World import World
 
 class Node:
     def __init__(self, name,type,household = None):
@@ -17,6 +18,7 @@ class Graph:
     def __init__(self):
         self.id_nodes : dict[str,Node] = {}
         self.nodes:dict[Node,list[Node]] = {}
+        self.age_dict:dict[int,int] = {}
     def add_node(self, node: Node):
         if node not in self.nodes:
             self.nodes[node] = []
@@ -28,19 +30,25 @@ class Graph:
         self.nodes[node1].append(node2)
         self.nodes[node2].append(node1)
 
-def build_graph():
+def build_graph(world : World):
     db = SyncEngine(database='contact_simulation')
     graph = Graph() 
     persons = list(db.find(Person))
-    create_neighborhood( persons,graph)
+    create_neighborhood( persons,graph,world)
     create_school(persons,graph)
     create_work(persons,graph)
     create_random_entertainment_places(graph)
     create_random_edges(graph)
     return graph
 
-def create_neighborhood(data , graph: Graph):
+def create_neighborhood(data , graph: Graph,world:World):
     for person in data:
+        if not world.get_age_group(person.age) in graph.age_dict:
+            graph.age_dict[world.get_age_group(person.age)] = 1
+        else:
+            # print('else')
+            graph.age_dict[world.get_age_group(person.age)] +=1
+            # print(graph.age_dict[world.get_age_group(person.age)], 'esta creciendo')
         # print(type(person), 'xq repiiiin')
         if not person.household in graph.id_nodes:
             house_node = Node(person.household,"H",person.neighborhood)

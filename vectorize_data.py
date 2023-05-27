@@ -31,6 +31,8 @@ def vetorize_data(fp='data.json'):
     for key in data.keys():
         if type(data[key]) is type(list()):
             data_to_append.extend(make_vector(data[key]))
+        elif type(data[key]) == type({}):
+            data_to_append.extend(make_vector(data[key]))
         else:
             final_dict[key] = data[key]
     v = DictVectorizer(sparse=False)
@@ -38,4 +40,9 @@ def vetorize_data(fp='data.json'):
 
     X = np.append(X[0], data_to_append, axis=0)
 
+    print(X)
+
     return X
+
+
+vetorize_data()

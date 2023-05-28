@@ -14,8 +14,9 @@ from models.action import Action
 from models.person import Person, PersonFactory, create_parallel
 from models.place import Place
 from models.population import Population
+from models.data_source import DataSource
 # from pathos import multiprocessing
-from data_loader import DataLoader
+# from data_loader import DataLoader
 from simulation.Person import Person as SimP
 
 # from simulation.Household import Household
@@ -42,11 +43,16 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, json_file_path: str='data.josn'):
+    def __init__(self, json_file_path: str = 'data.josn'):
         """initialization function
         """
 
-        self.data_source = DataLoader(json_file_path)
+        with open(json_file_path, 'r') as j:
+            contents = json.loads(j.read())
+
+        self.data_source = DataSource(**contents)
+
+        self.data_source = DataSource()
         self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)

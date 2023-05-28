@@ -84,7 +84,7 @@ class DataSourceFactory:
         return np.random.choice(np.arange(start=1, stop=size+1, step=1), size=size)
 
 
-   def _make_vector(self, dt):
+    def _make_vector(self, dt):
         data = []
 
         if type(dt) == type([]):

@@ -70,15 +70,15 @@ class DataLoader:
         self.provinces_population = data['provinces_population']
         self.inhabitants_distribution = data['inhabitants_distribution']
 
-    def make_vector(self, dt):
+    def _make_vector(self, dt):
         data = []
 
         if type(dt) == type([]):
             for i in dt:
-                data.extend(self.make_vector(i))
+                data.extend(self._make_vector(i))
         elif type(dt) == type({}):
             for key in dt:
-                data.extend(make_vector(dt[key]))
+                data.extend(_make_vector(dt[key]))
         else:
             return [dt]
 
@@ -98,9 +98,9 @@ class DataLoader:
                 continue
 
             if type(data[key]) is type(list()):
-                data_to_append.extend(self.make_vector(data[key]))
+                data_to_append.extend(self._make_vector(data[key]))
             elif type(data[key]) == type({}):
-                data_to_append.extend(self.make_vector(data[key]))
+                data_to_append.extend(self._make_vector(data[key]))
             else:
                 final_dict[key] = data[key]
         v = DictVectorizer(sparse=False)

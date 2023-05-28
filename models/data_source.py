@@ -3,8 +3,9 @@ from pydantic import BaseModel
 import numpy as np
 from uuid import uuid4
 
+
 class DataSource(BaseModel):
-    provinces_population: dict[str,int]
+    provinces_population: dict[str, int]
     total_employees: int
     total_population: int
     teacher_number: int
@@ -25,10 +26,7 @@ class DataSource(BaseModel):
     age_groups: list[list[int]]
     distribution_by_age_groups: list[float]
     distribution_of_man_or_woman: list[float]
-    # enrollment_distribution: list[float]
-    # total_enrollment: int
-    # total_houses: int
-    # urban_rural: list[int]
+
     neighborhoods_per_thousand_people: float
     inhabitants_distribution: list[float]
 

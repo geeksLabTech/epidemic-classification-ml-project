@@ -18,10 +18,10 @@ def make_vector(dt):
     return data
 
 
-def vetorize_data(fp='data.json'):
+def vectorize(data: dict):
 
-    with open(fp) as f:
-        data = json.load(f)
+    # with open(fp) as f:
+    #     data = json.load(f)
 
     data_to_append = []
 
@@ -46,4 +46,4 @@ def vetorize_data(fp='data.json'):
     return X
 
 
-vetorize_data()
+# vetorize_data()

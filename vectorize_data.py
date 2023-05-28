@@ -22,17 +22,17 @@ def vectorize(data: dict):
 
     # with open(fp) as f:
     #     data = json.load(f)
-
     data_to_append = []
 
     final_dict = {}
 
     for key in data.keys():
+        if key == 'provinces_population':
+            continue
+
         if type(data[key]) is type(list()):
             data_to_append.extend(make_vector(data[key]))
         elif type(data[key]) == type({}):
-            if key == 'provinces_population':
-                break
             data_to_append.extend(make_vector(data[key]))
         else:
             final_dict[key] = data[key]

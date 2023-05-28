@@ -84,7 +84,7 @@ class DataLoader:
 
         return data
 
-    def vectorize_data(self):
+    def vectorize_data(self,):
 
         data = self.__dict__
         print(data)

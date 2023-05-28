@@ -132,3 +132,4 @@ date.txt
 
 # Pickle files
 *.obj
+*.csv

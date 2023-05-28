@@ -1,33 +1,30 @@
 import json
-
+import uuid
+from multiprocessing import Pool
 # from data_distribution import *
 from timeit import default_timer as timer
-
-
-import uuid
 from uuid import UUID
 
 import numpy as np
-from multiprocessing import Pool
+from odmantic import ObjectId, SyncEngine
 
+from constants import (PRE_UNIVERSITY_SCHOOL, PRIMARY_SCHOOL, SECONDARY_SCHOOL,
+                       UNIVERSITY_SCHOOL)
+from models.action import Action
+from models.person import Person, PersonFactory, create_parallel
+from models.place import Place
+from models.population import Population
+from models.data_source import DataSource
 # from pathos import multiprocessing
+# from data_loader import DataLoader
 from simulation.Person import Person as SimP
+
 # from simulation.Household import Household
 # from simulation.School import School
 # from simulation.workplace import Workplace, WorkplaceSize
 
-from models.person import Person, PersonFactory, create_parallel
-from models.data_source import DataSource
-from models.population import Population
-from models.place import Place
-from models.action import Action
-
-from odmantic import SyncEngine, ObjectId
-from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
-
-# -> list[Person]:
 
 
 class World:
@@ -46,19 +43,32 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, json_file_path: str):
+    def __init__(self, json_file_path: str = 'data.josn'):
         """initialization function
         """
+
         with open(json_file_path, 'r') as j:
             contents = json.loads(j.read())
-            self.data_source = DataSource(**contents)
+
+        self.data_source = DataSource(**contents)
+
+        self.data_source = DataSource()
+        self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)
 
-        self.mat = np.zeros((len(self.data_source.age_groups),
-                            len(self.data_source.age_groups)))
+        self.mat = {
+            "work": np.zeros((len(self.data_source.age_groups),
+                              len(self.data_source.age_groups))),
+            "school": np.zeros((len(self.data_source.age_groups),
+                                len(self.data_source.age_groups))),
+            "neighborhood": np.zeros((len(self.data_source.age_groups),
+                                      len(self.data_source.age_groups))),
+            "house": np.zeros((len(self.data_source.age_groups),
+                               len(self.data_source.age_groups)))
+        }
 
-        self.mat_ages = np.zeros(len(self.data_source.age_groups))
+        self.mat_ages = np.ones(len(self.data_source.age_groups))
 
         self.total_population = 0
         self.db = SyncEngine(database='contact_simulation')
@@ -78,7 +88,7 @@ class World:
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
 
-    def create_people_by_household(self, prov_id: str, data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
+    def create_people_by_household(self, prov_id: str, data_source: DataLoader, household: dict, schools: dict[str, list[UUID]]):
         # First guarantee that there is at least one adult in the household
         people = [PersonFactory.create(
             data_source, household, schools, prov_id, True)]
@@ -193,28 +203,32 @@ class World:
         for _ in range(primary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRIMARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(secondary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[SECONDARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(pre_univ_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRE_UNIVERSITY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(university_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[UNIVERSITY_SCHOOL] = list_ids
 
@@ -239,10 +253,12 @@ class World:
         households = []
         for i in range(people_number_by_household.shape[0]):
             neigh_id = uuid.uuid4()
-            places.append(Place(place=str(neigh_id), province=prov_id))
+            places.append(Place(place=str(neigh_id),
+                          province=prov_id, clasification="neighborhood"))
             for j in range(people_number_by_household.shape[1]):
                 h_id = uuid.uuid4()
-                places.append(Place(place=str(h_id), province=prov_id))
+                places.append(
+                    Place(place=str(h_id), province=prov_id, clasification="house"))
                 households.append({'id': str(
                     h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
@@ -304,7 +320,8 @@ class World:
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
             wp = str(uuid.uuid4())
-            places.append(Place(place=wp, province=prov_id))
+            places.append(
+                Place(place=wp, province=prov_id, clasification='work'))
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp
@@ -321,6 +338,7 @@ class World:
             n_days (int, optional): number of days to simmulate, the more days more accurate should be. Defaults to 2.
             n_processes (int, optional): number of processes to concurrenlty run. Defaults to 12.
         """
+        start_time = timer()
         population = self.db.find_one(
             Population, Population.name == population_name)
 
@@ -334,6 +352,7 @@ class World:
             # night:
 
             for i in range(1, n_days):
+                print(i)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
 
                     for prov in provinces:
@@ -354,7 +373,7 @@ class World:
                             action = Action(destination=person_obj.current_location, person=person.id,
                                             day=i, time=time, simulation_id=1)
                             self.db.save(action)
-                            # self.db.save(person)
+                            self.db.save(person)
 
             print("Implementing contact reduction politics")
 
@@ -366,15 +385,17 @@ class World:
                 "social_awareness": {key: 0.2 for key in self.politics_deployed.keys()}
             }
 
+            print(f"Finished in {timer() - start_time}")
             # apply_politics(politics)
 
     def generate_contact_matrix(self, population_name: str, n_days: int):
-        people = self.db.find(Person)
+
         population = self.db.find_one(
             Population, Population.name == population_name)
 
         for province in population.provinces:
             for day in range(1, n_days+1):
+                print(day)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
                     for place in db.find(Place, Place.province == population.provinces[province]):
                         actions = self.db.find(
@@ -394,11 +415,12 @@ class World:
                             if not person:
                                 continue
 
-                            person.interacted.extend(interacted)
+                            person.interacted.extend(
+                                list(zip(interacted, [place.clasification] * len(interacted))))
 
                             if time == 'night':
                                 self.add_contacts_to_matrix(
-                                    list(set(person.interacted)), person.age_group)
+                                    person.interacted, person.age_group)
                                 person.interacted = []
 
                             # print(person)
@@ -408,9 +430,9 @@ class World:
 
     def add_contacts_to_matrix(self, interacted, age_group):
 
-        for p_id in interacted:
+        for p_id, place in interacted:
 
             person = self.db.find_one(Person, Person.id == ObjectId(p_id))
 
-            self.mat[age_group][person.age_group] += 1
-            self.mat[person.age_group][age_group] += 1
+            self.mat[place][age_group][person.age_group] += 1
+            self.mat[place][person.age_group][age_group] += 1

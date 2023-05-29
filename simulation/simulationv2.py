@@ -22,11 +22,11 @@ def run_step_of_simulation(graph : Graph,db: SyncEngine, matrix,Schoolmatrix, Wo
         # print(type(move.visitors[-1]), 'que tu ere')
     print('termine esto')
     full_matrix, school_matrix, work_matrix, house_matrix = get_contact_matrix(graph,population,matrix,Schoolmatrix,Workmatrix,Housematrix,w)
-    if save_matrices:
-        pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-        pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-        pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-        pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+    # if save_matrices:
+    #     pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
+    #     pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
+    #     pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
+    #     pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
         # np.save('full_matrix', full_matrix)
         # np.save('school_matrix', school_matrix)
         # np.save('work_matrix', work_matrix)
@@ -61,7 +61,7 @@ def build_move_distribution(last_position:str,actual_position:str,graph:Graph,is
         
             elif isWork and not graph.id_nodes[last_position].type== 'W':
                 if  graph.id_nodes[last_position].type  == 'H':
-                    prob_list[i] = 0.3
+                    prob_list[i] = 0.2
                 else :
                     prob_list[i] = 0.2
             else:
@@ -71,7 +71,7 @@ def build_move_distribution(last_position:str,actual_position:str,graph:Graph,is
                 prob_list[i] = 0.1
             elif isSchool and not graph.id_nodes[last_position].type== 'S':
                 if  graph.id_nodes[last_position].type  == 'H':
-                    prob_list[i] = 0.4
+                    prob_list[i] = 0.2
                 else :
                     prob_list[i] = 0.2
             else:
@@ -159,7 +159,7 @@ def normalize_matrice(graph: Graph,matrix):
 def run_simulation(world : World,use_cache=True,save_matrices = True):
     db = SyncEngine(database='contact_simulation')
     
-    # use_cache = False
+    use_cache = False
     if use_cache and Path('graph.obj').is_file():
         graph = load_graph_from_file()
         print('Graph loaded with pickle')
@@ -172,17 +172,20 @@ def run_simulation(world : World,use_cache=True,save_matrices = True):
     school_matrix =np.zeros((14,14))
     work_matrix= np.zeros((14,14))
     house_matrix=np.zeros((14,14))
-    for i in range(10):
+    for i in range(2):
         full_matrix,school_matrix,work_matrix,house_matrix = run_step_of_simulation(graph,db,full_matrix,school_matrix,work_matrix,house_matrix,world)
         if save_matrices and (i%2 == 0 or i == 0):
             save_full_matrix = normalize_matrice(graph,full_matrix)
-            save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= list(save_full_matrix),simulation_type='graph')
+            save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= save_full_matrix.tolist(),simulation_type='graph')
+            db.save(save_full_in_db)
             save_school_matrix= normalize_matrice(graph,school_matrix)
-            save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= list(save_school_matrix),simulation_type='graph')
+            save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= save_school_matrix.tolist(),simulation_type='graph')
+            db.save(save_school_in_db)
             save_work_matrix=normalize_matrice(graph,work_matrix)
-            save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= list(save_work_matrix),simulation_type='graph')
+            save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= save_work_matrix.tolist(),simulation_type='graph')
+            db.save(save_work_in_db)
             save_house_matrix = normalize_matrice(graph,house_matrix)
-            save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= list(save_house_matrix),simulation_type='graph')
+            save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= save_house_matrix.tolist(),simulation_type='graph')
             
             # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
             # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)

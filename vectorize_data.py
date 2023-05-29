@@ -41,7 +41,7 @@ def vectorize(data: dict):
 
     X = np.append(X[0], data_to_append, axis=0)
 
-    print(X)
+    # print(X)
 
     return X
 

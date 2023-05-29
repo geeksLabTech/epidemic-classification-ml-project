@@ -11,13 +11,13 @@ from odmantic import ObjectId, SyncEngine
 from constants import (PRE_UNIVERSITY_SCHOOL, PRIMARY_SCHOOL, SECONDARY_SCHOOL,
                        UNIVERSITY_SCHOOL)
 from models.action import Action
-from models.person import Person, PersonFactory, create_parallel
+from models.person import Person, PersonFactory, create_parallel, move_person
 from models.place import Place
 from models.population import Population
 from models.data_source import DataSource
 # from pathos import multiprocessing
 # from data_loader import DataLoader
-from simulation.Person import Person as SimP
+# from simulation.Person import Person as SimP
 
 # from simulation.Household import Household
 # from simulation.School import School
@@ -43,17 +43,22 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, json_file_path: str = 'data.josn'):
+    def __init__(self, json_file_path: str | None = None, data_source: DataSource | None = None):
         """initialization function
         """
+        if data_source is None:
+            if json_file_path is None:
+                raise ValueError('json_file_path and data_source cannot be None at the same time')
+            with open(json_file_path, 'r') as j:
+                contents = json.loads(j.read())
 
-        with open(json_file_path, 'r') as j:
-            contents = json.loads(j.read())
+            self.data_source = DataSource(**contents)
 
-        self.data_source = DataSource(**contents)
+        else:
+            self.data_source = data_source
 
-        self.data_source = DataSource()
-        self.data_source.vectorize_data()
+        # self.data_source = DataSource()
+        # self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)
 
@@ -88,7 +93,7 @@ class World:
         #     results.append(p.map(self.generate_neighborhoods,
         #                          (data_source.provinces_population), 3))
 
-    def create_people_by_household(self, prov_id: str, data_source: DataLoader, household: dict, schools: dict[str, list[UUID]]):
+    def create_people_by_household(self, prov_id: str, data_source: DataSource, household: dict, schools: dict[str, list[UUID]]):
         # First guarantee that there is at least one adult in the household
         people = [PersonFactory.create(
             data_source, household, schools, prov_id, True)]
@@ -361,16 +366,17 @@ class World:
                             Person, Person.province == prov_id)
                         for person in province:
                             assert person != None, 'Person cant be None'
-                            pers = person.__dict__
-                            pers['id'] = str(person.id)
-                            # print(str(person.id))
-                            person_obj = SimP.load_serialized(pers)
-                            place = person_obj.move(
-                                i, time, self.politics_deployed)
+                            place = move_person(person, i, time, self.politics_deployed, self.db)
+                            # pers = person.__dict__
+                            # pers['id'] = str(person.id)
+                            # # print(str(person.id))
+                            # person_obj = SimP.load_serialized(pers)
+                            # place = person_obj.move(
+                            #     i, time, self.politics_deployed)
 
                             person.current_place = place
 
-                            action = Action(destination=person_obj.current_location, person=person.id,
+                            action = Action(destination=person.current_place, person=person.id,
                                             day=i, time=time, simulation_id=1)
                             self.db.save(action)
                             self.db.save(person)

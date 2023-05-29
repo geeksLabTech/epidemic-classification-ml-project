@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 
 from World import World
-from data_loader import DataLoader
+# from data_loader import DataLoader
 
 
 from models.person import Person
@@ -12,7 +12,7 @@ from simulation.simulationv2 import run_simulation
 
 def main():
 
-    dl = DataLoader()
+    # dl = DataLoader()
     # print('initializing database')
     # client = AsyncIOMotorClient("mongodb://localhost:27017/")
 

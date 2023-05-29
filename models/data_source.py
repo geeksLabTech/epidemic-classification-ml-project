@@ -15,7 +15,7 @@ class DataSource(BaseModel):
     active_man_in_working_age: list[float]
     active_woman_in_working_age: list[float]
     active_by_sex: list[float]
-    proffesors_by_sex: list[float]
+    professors_by_sex: list[float]
     primary_schools_per_thousand_people: float
     secondary_schools_per_thousand_people: float
     pre_universitary_schools_per_thousand_people: float
@@ -58,7 +58,7 @@ class DataSourceFactory:
             alpha=self.create_random_alphas_for_dirichlet(2), size=1)[0])
         active_by_sex = list(np.random.dirichlet(
             alpha=self.create_random_alphas_for_dirichlet(2), size=1)[0])
-        proffesors_by_sex = list(np.random.dirichlet(
+        professors_by_sex = list(np.random.dirichlet(
             alpha=self.create_random_alphas_for_dirichlet(2), size=1)[0])
         primary_schools_per_thousand_people = np.random.randint(1, 10)
         secondary_schools_per_thousand_people = np.random.randint(1, 10)
@@ -82,7 +82,7 @@ class DataSourceFactory:
         
         total_enrollment = np.random.randint(10000, 2000000)
         enrollment_distribution = np.random.dirichlet(alpha=self.create_random_alphas_for_dirichlet(4), size=1).tolist()[0]
-        return DataSource(provinces_population=provinces_population, total_population=total_population, total_employees=total_employees, teacher_number=teacher_number, active_man_in_total_population=active_man_in_total_population, active_people_in_working_age=active_people_in_working_age, working_age=working_age, active_man_in_working_age=active_man_in_working_age, active_woman_in_working_age=active_woman_in_working_age, active_by_sex=active_by_sex, proffesors_by_sex=proffesors_by_sex, primary_schools_per_thousand_people=primary_schools_per_thousand_people, secondary_schools_per_thousand_people=secondary_schools_per_thousand_people, pre_universitary_schools_per_thousand_people=pre_universitary_schools_per_thousand_people, universities_per_province=universities_per_province, distribution_by_economic_activity=distribution_by_economic_activity, man_distribution_by_economic_activity=man_distribution_by_economic_activity, woman_distribution_by_economic_activity=woman_distribution_by_economic_activity, distribution_by_age_groups=distribution_by_age_groups, age_groups=age_groups, distribution_of_man_or_woman=distribution_of_man_or_woman, neighborhoods_per_thousand_people=neighborhoods_per_thousand_people, inhabitants_distribution=inhabitants_distribution, total_enrollment=total_enrollment, enrollment_distribution=enrollment_distribution)
+        return DataSource(provinces_population=provinces_population, total_population=total_population, total_employees=total_employees, teacher_number=teacher_number, active_man_in_total_population=active_man_in_total_population, active_people_in_working_age=active_people_in_working_age, working_age=working_age, active_man_in_working_age=active_man_in_working_age, active_woman_in_working_age=active_woman_in_working_age, active_by_sex=active_by_sex, professors_by_sex=professors_by_sex, primary_schools_per_thousand_people=primary_schools_per_thousand_people, secondary_schools_per_thousand_people=secondary_schools_per_thousand_people, pre_universitary_schools_per_thousand_people=pre_universitary_schools_per_thousand_people, universities_per_province=universities_per_province, distribution_by_economic_activity=distribution_by_economic_activity, man_distribution_by_economic_activity=man_distribution_by_economic_activity, woman_distribution_by_economic_activity=woman_distribution_by_economic_activity, distribution_by_age_groups=distribution_by_age_groups, age_groups=age_groups, distribution_of_man_or_woman=distribution_of_man_or_woman, neighborhoods_per_thousand_people=neighborhoods_per_thousand_people, inhabitants_distribution=inhabitants_distribution, total_enrollment=total_enrollment, enrollment_distribution=enrollment_distribution)
 
     def create_random_alphas_for_dirichlet(self, size):
         return np.random.choice(np.arange(start=1, stop=size+1, step=1), size=size)

@@ -180,10 +180,7 @@ class World:
             print(province)
             # print(total_neighborhoods)
 
-        # the neighborhood dictionary gets assigned to the province a list
-        # a neighborhood is a list of households, denoting closeness between
-        # all hosueholds inside a neighborhood
-        neighborhoods = []
+        
 
         # according to distribution, number of schools of each type is calculated
 
@@ -237,12 +234,6 @@ class World:
 
         schools[UNIVERSITY_SCHOOL] = list_ids
 
-        # province_obj.schools = {
-        #     PRIMARY_SCHOOL: [sc.id for sc in schools[PRIMARY_SCHOOL]],
-        #     SECONDARY_SCHOOL: [sc.id for sc in schools[SECONDARY_SCHOOL]],
-        #     PRE_UNIVERSITY_SCHOOL: [sc.id for sc in schools[PRE_UNIVERSITY_SCHOOL]],
-        #     UNIVERSITY_SCHOOL: [sc.id for sc in schools[UNIVERSITY_SCHOOL]]
-        # }
         # the neighborhoods are created
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
         inhabitants_distribution = np.array(
@@ -252,8 +243,8 @@ class World:
         people_number_by_household = np.random.choice(a=possible_people_by_household,
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
-        print([sum(people_number_by_household[i])
-              for i in range(people_number_by_household.shape[0])])
+        # print([sum(people_number_by_household[i])
+        #       for i in range(people_number_by_household.shape[0])])
         # Create household list from people_number_by_household
         households = []
         for i in range(people_number_by_household.shape[0]):
@@ -267,14 +258,8 @@ class World:
                 households.append({'id': str(
                     h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
-        # province_obj.households = [h.id for h in households]
-
-        person_list: list[str] = []
+        
         start_time = timer()
-
-        results = []
-        # for h in households:
-        #     results.extend(create_people_by_household(self.data_source, h, schools))
         for h in households:
             # with Pool(30) as p:
             # p.apply_async(create_people_by_household,
@@ -290,28 +275,21 @@ class World:
         print('Finished people in ', timer() - start_time)
 
         start_time = timer()
-        people_that_work = [i for i in self.db.find(
-            Person, Person.work == True)]
+        people_that_work = self.db.find(Person, Person.work == True)._results
 
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
             province, prov_id, len(people_that_work), people_that_work)
-        # province_obj.workplaces = [w.id for w in workplaces]
+        
 
         self.db.save_all(people_that_work)
         self.db.save_all(places)
 
         print('Finished workers in ', timer() - start_time)
 
-        # prov_id = self.db.insert_one("Province", {
-        #     "province_name": province,
-        #     "neighborhoods": neighborhoods,
-        #     "schools": inserted_schools,
-        #     "workplaces": workplaces
-        # }).inserted_id
+        
         if verbose >= 2:
             print("Finished:", province)
-        # return prov_id
 
     def assign_workplaces_to_people(self, province: str, prov_id: str, total_workers: int, people_that_works: list[Person]):
 
@@ -327,11 +305,16 @@ class World:
             wp = str(uuid.uuid4())
             places.append(
                 Place(place=wp, province=prov_id, clasification='work'))
+            wp_current_workers = 0
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp
                     people_mask[i] = 1
                     workers_count += 1
+                    wp_current_workers += 1
+                    if wp_current_workers == size:
+                        break
+
         self.db.save_all(places)
         return people_that_works
 

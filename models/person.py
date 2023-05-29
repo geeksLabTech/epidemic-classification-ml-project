@@ -181,7 +181,7 @@ class PersonFactory():
             return False, None
 
         active=np.random.choice(
-            2, size=1, p=data_source.active_people_in_working_age)[0]
+            2, size=1, p=data_source.active_people_in_working_age[::-1])[0]
         if active == 1:
             return False, None
 

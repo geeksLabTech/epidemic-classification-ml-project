@@ -1,9 +1,7 @@
 
-from ast import Raise
-from enum import Enum
-from typing import Optional, Union
-from odmantic import AIOEngine, Model, Reference, SyncEngine
-from sklearn import neighbors
+
+from typing import Optional
+from odmantic import Model, SyncEngine
 from models.data_source import DataSource
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE

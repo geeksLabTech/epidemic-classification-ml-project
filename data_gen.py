@@ -1,10 +1,10 @@
 from models.data_source import DataSourceFactory
-from data_loader import DataLoader
 import pandas as pd
 import numpy as np
 import json
 from World import World
 
+# Note: where to vectorize data?
 
 def generate_dataset(n_datasets: int = 1000):
     for it in range(n_datasets):
@@ -13,14 +13,14 @@ def generate_dataset(n_datasets: int = 1000):
 
         file = f"dataset/data_{it}.json"
 
-        data = DataSourceFactory().create_random_population().__dict__
+        data_source = DataSourceFactory().create_random_population()
 
-        with open(file, "w") as f:
-            json.dump(data, f)
+        # with open(file, "w") as f:
+        #     json.dump(data, f)
 
-        dl = DataLoader(file)
+        # dl = DataLoader(file)
 
-        w = World(dl)
+        w = World(data_source=data_source)
 
         w.generate_population(file)
         w.run_simulation(file, n_days=n_days)

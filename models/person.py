@@ -1,6 +1,9 @@
 
-from odmantic import Model
-from typing import Optional
+from ast import Raise
+from enum import Enum
+from typing import Optional, Union
+from odmantic import AIOEngine, Model, Reference, SyncEngine
+from sklearn import neighbors
 from models.data_source import DataSource
 import numpy as np
 from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL, NULL_SCHOOL, NULL_WORKPLACE
@@ -32,6 +35,84 @@ def create_parallel(data) -> Person:
     data_source, household, schools, province = data
     return PersonFactory.create(data_source, household, schools, province)
 
+
+def get_random_element_from_collection(db: SyncEngine):
+    # Get the count of documents in the collection
+    count = db.count(Person)
+    if count == 0:
+        raise RuntimeError('No people in collection')
+    
+    # flag = True
+
+    # while flag:
+        # Generate a random index within the range of the document count
+    random_index = np.random.randint(0, count - 1)
+
+    for p in db.find(Person, skip=random_index, limit=1):
+        return p
+
+
+    # return person
+
+
+def move_person(person: Person, day, time, politics_deployed, db: SyncEngine):
+        probabilities = {
+            "morning": {"household": 4, "workplace": 45, "neighborhood": 1, "random place": 5},
+            "noon": {"household": 2, "workplace": 65, "neighborhood": 1, "random place": 5},
+            "afternoon": {"household": 45, "workplace": 1, "neighborhood": 3, "random place": 15},
+            "night": {"household": 6, "workplace": 5, "neighborhood": 2, "random place": 15}
+        }
+
+        probabilities_adjusted = probabilities.get(time, {})
+        for i in probabilities_adjusted:
+            probabilities_adjusted[i] *= politics_deployed[i]
+        # print(probabilities_adjusted)
+
+        if not person.work:
+            probabilities_adjusted['workplace'] = 0
+
+        if person.study:
+            probabilities_adjusted["school"] = 0.6
+            probabilities_adjusted["workplace"] = 0
+
+        total_probability = sum(probabilities_adjusted.values())
+
+        if total_probability <= 0:
+            print("No available places to move.")
+            return
+
+        probabilities = list(probabilities_adjusted.values()) / \
+            np.linalg.norm(list(probabilities_adjusted.values()), ord=1)
+
+        choices = list(probabilities_adjusted.keys())
+
+        next_location = np.random.choice(choices, p=probabilities)
+        # print(probabilities)
+        if next_location == 'random place':
+            while True:
+                random_person = get_random_element_from_collection(db)
+                places = [
+                    random_person.household,
+                    random_person.school,
+                    random_person.neighborhood,
+                    random_person.workplace
+                ]
+                places = [i for i in places if i != None]
+                if len(places) > 0:
+                    break
+            place_id = np.random.choice(a=places)
+            person.current_location = place_id
+
+            # print(f"moved to random place: {place_id}")
+            # here was person.__dict__[next_location]
+        elif person.current_place == next_location:
+            pass
+            # print(f"decided not to move, stayed at {self.current_location}")
+        else:
+            person.current_place = next_location
+
+            # print("Moved to", next_location)
+        return person.current_place
 
 class PersonFactory():
     @ classmethod

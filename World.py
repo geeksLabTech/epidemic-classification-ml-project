@@ -48,7 +48,8 @@ class World:
         """
         if data_source is None:
             if json_file_path is None:
-                raise ValueError('json_file_path and data_source cannot be None at the same time')
+                raise ValueError(
+                    'json_file_path and data_source cannot be None at the same time')
             with open(json_file_path, 'r') as j:
                 contents = json.loads(j.read())
 
@@ -180,8 +181,6 @@ class World:
             print(province)
             # print(total_neighborhoods)
 
-        
-
         # according to distribution, number of schools of each type is calculated
 
         primary_schools_len = max(int(
@@ -258,7 +257,6 @@ class World:
                 households.append({'id': str(
                     h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
-        
         start_time = timer()
         for h in households:
             # with Pool(30) as p:
@@ -275,19 +273,19 @@ class World:
         print('Finished people in ', timer() - start_time)
 
         start_time = timer()
-        people_that_work = self.db.find(Person, Person.work == True)._results
+
+        people_that_work = list(self.db.find(
+            Person, Person.work == True))
 
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
             province, prov_id, len(people_that_work), people_that_work)
-        
 
         self.db.save_all(people_that_work)
         self.db.save_all(places)
 
         print('Finished workers in ', timer() - start_time)
 
-        
         if verbose >= 2:
             print("Finished:", province)
 
@@ -349,7 +347,8 @@ class World:
                             Person, Person.province == prov_id)
                         for person in province:
                             assert person != None, 'Person cant be None'
-                            place = move_person(person, i, time, self.politics_deployed, self.db)
+                            place = move_person(
+                                person, i, time, self.politics_deployed, self.db)
                             # pers = person.__dict__
                             # pers['id'] = str(person.id)
                             # # print(str(person.id))

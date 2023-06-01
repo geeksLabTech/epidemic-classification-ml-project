@@ -1,33 +1,30 @@
 import json
-
+import uuid
+from multiprocessing import Pool
 # from data_distribution import *
 from timeit import default_timer as timer
-
-
-import uuid
 from uuid import UUID
 
 import numpy as np
-from multiprocessing import Pool
+from odmantic import ObjectId, SyncEngine
 
+from constants import (PRE_UNIVERSITY_SCHOOL, PRIMARY_SCHOOL, SECONDARY_SCHOOL,
+                       UNIVERSITY_SCHOOL)
+from models.action import Action
+from models.person import Person, PersonFactory, create_parallel, move_person
+from models.place import Place
+from models.population import Population
+from models.data_source import DataSource
 # from pathos import multiprocessing
-from simulation.Person import Person as SimP
+# from data_loader import DataLoader
+# from simulation.Person import Person as SimP
+
 # from simulation.Household import Household
 # from simulation.School import School
 # from simulation.workplace import Workplace, WorkplaceSize
 
-from models.person import Person, PersonFactory, create_parallel
-from models.data_source import DataSource
-from models.population import Population
-from models.place import Place
-from models.action import Action
-
-from odmantic import SyncEngine, ObjectId
-from constants import PRIMARY_SCHOOL, SECONDARY_SCHOOL, PRE_UNIVERSITY_SCHOOL, UNIVERSITY_SCHOOL
 
 db = SyncEngine(database='contact_simulation')
-
-# -> list[Person]:
 
 
 class World:
@@ -46,19 +43,38 @@ class World:
         dictionary containing a list of workplaces per province
     """
 
-    def __init__(self, json_file_path: str):
+    def __init__(self, json_file_path: str | None = None, data_source: DataSource | None = None):
         """initialization function
         """
-        with open(json_file_path, 'r') as j:
-            contents = json.loads(j.read())
+        if data_source is None:
+            if json_file_path is None:
+                raise ValueError(
+                    'json_file_path and data_source cannot be None at the same time')
+            with open(json_file_path, 'r') as j:
+                contents = json.loads(j.read())
+
             self.data_source = DataSource(**contents)
+
+        else:
+            self.data_source = data_source
+
+        # self.data_source = DataSource()
+        # self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)
 
-        self.mat = np.zeros((len(self.data_source.age_groups),
-                            len(self.data_source.age_groups)))
+        self.mat = {
+            "work": np.zeros((len(self.data_source.age_groups),
+                              len(self.data_source.age_groups))),
+            "school": np.zeros((len(self.data_source.age_groups),
+                                len(self.data_source.age_groups))),
+            "neighborhood": np.zeros((len(self.data_source.age_groups),
+                                      len(self.data_source.age_groups))),
+            "house": np.zeros((len(self.data_source.age_groups),
+                               len(self.data_source.age_groups)))
+        }
 
-        self.mat_ages = np.zeros(len(self.data_source.age_groups))
+        self.mat_ages = np.ones(len(self.data_source.age_groups))
 
         self.total_population = 0
         self.db = SyncEngine(database='contact_simulation')
@@ -165,11 +181,6 @@ class World:
             print(province)
             # print(total_neighborhoods)
 
-        # the neighborhood dictionary gets assigned to the province a list
-        # a neighborhood is a list of households, denoting closeness between
-        # all hosueholds inside a neighborhood
-        neighborhoods = []
-
         # according to distribution, number of schools of each type is calculated
 
         primary_schools_len = max(int(
@@ -193,37 +204,35 @@ class World:
         for _ in range(primary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRIMARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(secondary_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[SECONDARY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(pre_univ_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[PRE_UNIVERSITY_SCHOOL] = list_ids
         list_ids = []
         for _ in range(university_schools_len):
             p_id = str(uuid.uuid4())
             list_ids.append(p_id)
-            places.append(Place(place=p_id, province=prov_id))
+            places.append(
+                Place(place=p_id, province=prov_id, clasification="school"))
 
         schools[UNIVERSITY_SCHOOL] = list_ids
 
-        # province_obj.schools = {
-        #     PRIMARY_SCHOOL: [sc.id for sc in schools[PRIMARY_SCHOOL]],
-        #     SECONDARY_SCHOOL: [sc.id for sc in schools[SECONDARY_SCHOOL]],
-        #     PRE_UNIVERSITY_SCHOOL: [sc.id for sc in schools[PRE_UNIVERSITY_SCHOOL]],
-        #     UNIVERSITY_SCHOOL: [sc.id for sc in schools[UNIVERSITY_SCHOOL]]
-        # }
         # the neighborhoods are created
         possible_people_by_household = np.arange(start=1, stop=10, step=1)
         inhabitants_distribution = np.array(
@@ -233,27 +242,22 @@ class World:
         people_number_by_household = np.random.choice(a=possible_people_by_household,
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
-        print([sum(people_number_by_household[i])
-              for i in range(people_number_by_household.shape[0])])
+        # print([sum(people_number_by_household[i])
+        #       for i in range(people_number_by_household.shape[0])])
         # Create household list from people_number_by_household
         households = []
         for i in range(people_number_by_household.shape[0]):
             neigh_id = uuid.uuid4()
-            places.append(Place(place=str(neigh_id), province=prov_id))
+            places.append(Place(place=str(neigh_id),
+                          province=prov_id, clasification="neighborhood"))
             for j in range(people_number_by_household.shape[1]):
                 h_id = uuid.uuid4()
-                places.append(Place(place=str(h_id), province=prov_id))
+                places.append(
+                    Place(place=str(h_id), province=prov_id, clasification="house"))
                 households.append({'id': str(
                     h_id), 'number_of_people': people_number_by_household[i][j], 'neighborhood_id': str(neigh_id)})
 
-        # province_obj.households = [h.id for h in households]
-
-        person_list: list[str] = []
         start_time = timer()
-
-        results = []
-        # for h in households:
-        #     results.extend(create_people_by_household(self.data_source, h, schools))
         for h in households:
             # with Pool(30) as p:
             # p.apply_async(create_people_by_household,
@@ -269,28 +273,21 @@ class World:
         print('Finished people in ', timer() - start_time)
 
         start_time = timer()
-        people_that_work = [i for i in self.db.find(
-            Person, Person.work == True)]
+
+        people_that_work = list(self.db.find(
+            Person, Person.work == True))
 
         assert people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
             province, prov_id, len(people_that_work), people_that_work)
-        # province_obj.workplaces = [w.id for w in workplaces]
 
         self.db.save_all(people_that_work)
         self.db.save_all(places)
 
         print('Finished workers in ', timer() - start_time)
 
-        # prov_id = self.db.insert_one("Province", {
-        #     "province_name": province,
-        #     "neighborhoods": neighborhoods,
-        #     "schools": inserted_schools,
-        #     "workplaces": workplaces
-        # }).inserted_id
         if verbose >= 2:
             print("Finished:", province)
-        # return prov_id
 
     def assign_workplaces_to_people(self, province: str, prov_id: str, total_workers: int, people_that_works: list[Person]):
 
@@ -304,12 +301,18 @@ class World:
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
             wp = str(uuid.uuid4())
-            places.append(Place(place=wp, province=prov_id))
+            places.append(
+                Place(place=wp, province=prov_id, clasification='work'))
+            wp_current_workers = 0
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
                     people_that_works[i].workplace = wp
                     people_mask[i] = 1
                     workers_count += 1
+                    wp_current_workers += 1
+                    if wp_current_workers == size:
+                        break
+
         self.db.save_all(places)
         return people_that_works
 
@@ -321,6 +324,7 @@ class World:
             n_days (int, optional): number of days to simmulate, the more days more accurate should be. Defaults to 2.
             n_processes (int, optional): number of processes to concurrenlty run. Defaults to 12.
         """
+        start_time = timer()
         population = self.db.find_one(
             Population, Population.name == population_name)
 
@@ -334,6 +338,7 @@ class World:
             # night:
 
             for i in range(1, n_days):
+                print(i)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
 
                     for prov in provinces:
@@ -342,19 +347,21 @@ class World:
                             Person, Person.province == prov_id)
                         for person in province:
                             assert person != None, 'Person cant be None'
-                            pers = person.__dict__
-                            pers['id'] = str(person.id)
-                            # print(str(person.id))
-                            person_obj = SimP.load_serialized(pers)
-                            place = person_obj.move(
-                                i, time, self.politics_deployed)
+                            place = move_person(
+                                person, i, time, self.politics_deployed, self.db)
+                            # pers = person.__dict__
+                            # pers['id'] = str(person.id)
+                            # # print(str(person.id))
+                            # person_obj = SimP.load_serialized(pers)
+                            # place = person_obj.move(
+                            #     i, time, self.politics_deployed)
 
                             person.current_place = place
 
-                            action = Action(destination=person_obj.current_location, person=person.id,
+                            action = Action(destination=person.current_place, person=person.id,
                                             day=i, time=time, simulation_id=1)
                             self.db.save(action)
-                            # self.db.save(person)
+                            self.db.save(person)
 
             print("Implementing contact reduction politics")
 
@@ -366,15 +373,17 @@ class World:
                 "social_awareness": {key: 0.2 for key in self.politics_deployed.keys()}
             }
 
+            print(f"Finished in {timer() - start_time}")
             # apply_politics(politics)
 
     def generate_contact_matrix(self, population_name: str, n_days: int):
-        people = self.db.find(Person)
+
         population = self.db.find_one(
             Population, Population.name == population_name)
 
         for province in population.provinces:
             for day in range(1, n_days+1):
+                print(day)
                 for time in ['morning', 'noon', 'afternoon', 'night']:
                     for place in db.find(Place, Place.province == population.provinces[province]):
                         actions = self.db.find(
@@ -394,11 +403,12 @@ class World:
                             if not person:
                                 continue
 
-                            person.interacted.extend(interacted)
+                            person.interacted.extend(
+                                list(zip(interacted, [place.clasification] * len(interacted))))
 
                             if time == 'night':
                                 self.add_contacts_to_matrix(
-                                    list(set(person.interacted)), person.age_group)
+                                    person.interacted, person.age_group)
                                 person.interacted = []
 
                             # print(person)
@@ -408,9 +418,9 @@ class World:
 
     def add_contacts_to_matrix(self, interacted, age_group):
 
-        for p_id in interacted:
+        for p_id, place in interacted:
 
             person = self.db.find_one(Person, Person.id == ObjectId(p_id))
 
-            self.mat[age_group][person.age_group] += 1
-            self.mat[person.age_group][age_group] += 1
+            self.mat[place][age_group][person.age_group] += 1
+            self.mat[place][person.age_group][age_group] += 1

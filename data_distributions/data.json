@@ -81,10 +81,13 @@
           "R. A. Madeira": 251900
       },
     
+
       "total_employees": 4426461,
     
       "total_population": 10394297,
-    
+       
+      "teacher_number": 90000, 
+
       "active_man_in_total_population": [0.4658171957908806, 0.40547938106553705],
       "active_people_in_working_age": [0.5346253022954816, 0.4653746977045184],
       "working_age": [0.4702655761651456, 0.5297344238348544],
@@ -155,6 +158,7 @@
     
       "primary_schools_per_thousand_people": 0.3328370465221273,
       "secondary_schools_per_thousand_people": 0.1425004117051989,
+      "pre_universitary_schools_per_thousand_people": 0.1425004117051989,
       "universities_per_province": 4.666666666666667,
     
       "distribution_by_economic_activity": 
@@ -193,8 +197,6 @@
       "distribution_of_man_or_woman": [0.4920021643930457, 0.5079978356069543],
     
       "enrollment_distribution": [0.24768693112485793, 0.31063308749436147, 0.2929915603518488, 0.1486884210289318],
-  
-      "total_enrollment": 7639418,
   
       "neighborhoods_per_thousand_people": 1.0,
     
@@ -245,9 +247,14 @@
       
       "primary_schools_per_thousand_people": 0.9717797799211105,
       "secondary_schools_per_thousand_people": 0.3132638564104374,
+      "pre_universitary_schools_per_thousand_people": 0.3132638564104374,
       "universities_per_province": 2.2222222222222223,
     
       "distribution_by_economic_activity": [0.244, 0.212, 0.1, 0.05, 0.088, 0.268, 0.032, 0.052],
+
+      "woman_distribution_by_economic_activity":[0.326,0.0982,0.1,0.01,0.0008,0.2894,0.0084,0.1666],
+    
+      "man_distribution_by_economic_activity":[0.2,0.25,0.12,0.06,0.1,0.2,0.06,0.005],
     
       "age_groups": [[0, 4], [5, 9], [10, 14], [15, 19], [20, 24], [25, 29], [30, 34], [35, 39], [40, 44], [45, 49], 
                      [50, 54], [55, 59], [60, 64], [65, 100]],
@@ -258,6 +265,8 @@
     
       "distribution_of_man_or_woman": [0.5036979474599155, 0.4963020525400845],
       
+      "enrollment_distribution": [0.4809, 0.329, 0.1, 0.09],
+
       "neighborhoods_per_thousand_people": 1.0,
     
       "inhabitants_distribution":[0.11872370694705989, 0.15875928973067002, 0.20589409995857477, 0.1990770921802047, 0.14209430097819647,
@@ -360,10 +369,7 @@
   "distribution_of_man_or_woman": [0.486, 0.514],
 
   "enrollment_distribution": [0.04144373673036093, 0.21220806794055203, 0.5246921443736731, 0.22165605095541402],
-  "total_enrollment": 47100,
-
-  "total_houses": 3721042,
-  "urban_rural": [2894708, 890488],
+ 
   "neighborhoods_per_thousand_people": 1.0,
 
   "inhabitants_distribution": [

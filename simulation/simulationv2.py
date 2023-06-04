@@ -24,15 +24,7 @@ def run_step_of_simulation(population,graph : Graph,db: SyncEngine, matrix , w :
         # print(type(move.visitors[-1]), 'que tu ere')
     print('termine esto')
     full_matrix = get_contact_matrix(graph,population,matrix,w)
-    # if save_matrices:
-    #     pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-    #     pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-    #     pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-    #     pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
-        # np.save('full_matrix', full_matrix)
-        # np.save('school_matrix', school_matrix)
-        # np.save('work_matrix', work_matrix)
-        # np.save('house_matrix', house_matrix)
+
         
     return full_matrix
 
@@ -160,9 +152,7 @@ def normalize_matrice(graph: Graph,matrix):
         summed_values = np.array([to_sum * total_people_by_age_group[j]
                                  for j in range(len(total_people_by_age_group))])
         matrix[i] = matrix[i] / summed_values
-    
-    # print('resultado al dividir', matrix)
-    # print()
+
     return matrix
 
 
@@ -183,25 +173,10 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
     # work_matrix= np.zeros((14,14))
     # house_matrix=np.zeros((14,14))
     n_days = 30
+    population = db.find(Person)
     for i in range(n_days):
-        full_matrix = run_step_of_simulation(graph,db,full_matrix,world)
-        # if save_matrices and (i%2 == 0 or i == 0):
-        #     save_full_matrix = normalize_matrice(graph,full_matrix)
-        #     save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= save_full_matrix.tolist(),simulation_type='graph')
-        #     db.save(save_full_in_db)``
-            # save_school_matrix= normalize_matrice(graph,school_matrix)
-            # save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= save_school_matrix.tolist(),simulation_type='graph')
-            # db.save(save_school_in_db)
-            # save_work_matrix=normalize_matrice(graph,work_matrix)
-            # save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= save_work_matrix.tolist(),simulation_type='graph')
-            # db.save(save_work_in_db)
-            # save_house_matrix = normalize_matrice(graph,house_matrix)
-            # save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= save_house_matrix.tolist(),simulation_type='graph')
-            
-            # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-            # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-            # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-            # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+        full_matrix = run_step_of_simulation(population,graph,db,full_matrix,world)
+        
         print(i)
     save_full_matrix = normalize_matrice(graph,full_matrix)/n_days
     vector_data = vectorize(world.data_source.dict())

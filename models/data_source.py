@@ -37,7 +37,7 @@ class DataSourceFactory:
     def create_random_population(self):
         province = str(uuid4())
 
-        total_population = np.random.randint(10000, 100000)
+        total_population = np.random.randint(10000, 50000)
         provinces_population = {province: total_population}
 
         total_employees = np.random.randint(

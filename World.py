@@ -157,6 +157,7 @@ class World:
             print('Finished in', timer() - start_time)
         population.provinces = provinces
         self.db.save(population)
+        self.population_name = population_name
         # for i in self.data_source.provinces_population:
 
         # self.db.insert_one("Population", {"population_name": population_name,

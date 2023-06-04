@@ -15,14 +15,17 @@ from vectorize_data import vectorize
 from models.data_source import DataSource
 
 
-def run_step_of_simulation(graph: Graph, db: SyncEngine, matrix, w: World, save_matrices=True):
+def run_step_of_simulation(graph: Graph, db: SyncEngine, matrix, w: World, population: list, save_matrices=True):
 
-    population = db.find(Person)
     for person in population:
-        update_visitors(person, graph.id_nodes[person.current_place])
-        move = build_move_distribution(
-            person.last_place, person.current_place, graph, person.study, person.work)
-        move.visitors.append(person)
+        try:
+            update_visitors(person, graph.id_nodes[person.current_place])
+            move = build_move_distribution(
+                person.last_place, person.current_place, graph, person.study, person.work)
+            move.visitors.append(person)
+        except KeyError():
+            print("unknown place, skipping")
+            continue
         # print(type(move.visitors[-1]), 'que tu ere')
     # print('termine esto')
     full_matrix = get_contact_matrix(graph, population, matrix, w)
@@ -187,27 +190,33 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
     # work_matrix= np.zeros((14,14))
     # house_matrix=np.zeros((14,14))
     n_days = 5
+
+    population = db.find(Person)
     for i in range(n_days):
         print(i)
-        full_matrix = run_step_of_simulation(graph, db, full_matrix, world)
-        # if save_matrices and (i%2 == 0 or i == 0):
-        #     save_full_matrix = normalize_matrice(graph,full_matrix)
-        #     save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= save_full_matrix.tolist(),simulation_type='graph')
-        #     db.save(save_full_in_db)``
-        # save_school_matrix= normalize_matrice(graph,school_matrix)
-        # save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= save_school_matrix.tolist(),simulation_type='graph')
-        # db.save(save_school_in_db)
-        # save_work_matrix=normalize_matrice(graph,work_matrix)
-        # save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= save_work_matrix.tolist(),simulation_type='graph')
-        # db.save(save_work_in_db)
-        # save_house_matrix = normalize_matrice(graph,house_matrix)
-        # save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= save_house_matrix.tolist(),simulation_type='graph')
+    #     full_matrix = run_step_of_simulation(
+    #         graph, db, full_matrix, world, population)
+    # if save_matrices and (i%2 == 0 or i == 0):
+    #     save_full_matrix = normalize_matrice(graph,full_matrix)
+    #     save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= save_full_matrix.tolist(),simulation_type='graph')
+    #     db.save(save_full_in_db)``
+    # save_school_matrix= normalize_matrice(graph,school_matrix)
+    # save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= save_school_matrix.tolist(),simulation_type='graph')
+    # db.save(save_school_in_db)
+    # save_work_matrix=normalize_matrice(graph,work_matrix)
+    # save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= save_work_matrix.tolist(),simulation_type='graph')
+    # db.save(save_work_in_db)
+    # save_house_matrix = normalize_matrice(graph,house_matrix)
+    # save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= save_house_matrix.tolist(),simulation_type='graph')
 
-        # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-        # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-        # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-        # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
-        # print(i)
+    # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
+    # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
+    # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
+    # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
+    # print(i)
+    for i in population:
+        db.delete(i)
+    print("Done simulating, building matrix")
     save_full_matrix = normalize_matrice(graph, full_matrix)/n_days
     vector_data = vectorize(world.data_source.dict())
     save_full_in_db = ContactMatrix(category='full_matrix', vector=vector_data.tolist(

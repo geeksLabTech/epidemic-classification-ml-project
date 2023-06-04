@@ -30,6 +30,7 @@ def main():
         print("Done!, Simmulating days now...")
         run_simulation(w)
         print(i)
+        
     # w.run_simulation("pinar", 100)
     # print("Building Matrix")
     # labels = [str(i[0])+"-"+str(i[1]) for i in dl.age_groups]

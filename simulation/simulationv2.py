@@ -14,8 +14,9 @@ import pandas as pd
 from vectorize_data import vectorize
 from models.data_source import DataSource
 
-def run_step_of_simulation(population,graph : Graph,db: SyncEngine, matrix , w : World, save_matrices = True):
-        
+
+def run_step_of_simulation(population, graph: Graph, db: SyncEngine, matrix, w: World, save_matrices=True):
+
     for person in population:
         try:
             update_visitors(person, graph.id_nodes[person.current_place])
@@ -27,9 +28,8 @@ def run_step_of_simulation(population,graph : Graph,db: SyncEngine, matrix , w :
             continue
         # print(type(move.visitors[-1]), 'que tu ere')
     # print('termine esto')
-    full_matrix = get_contact_matrix(graph,population,matrix,w)
+    full_matrix = get_contact_matrix(graph, population, matrix, w)
 
-        
     return full_matrix
 
 
@@ -131,25 +131,27 @@ def get_contact_matrix(graph: Graph, population, matrix, w: World):
                 for j in range(i+1, len(node.visitors)):
                     # Housematrix[w.get_age_group(node.visitors[i].age),w.get_age_group(node.visitors[j].age)] += 1
                     # Housematrix[w.get_age_group(node.visitors[j].age),w.get_age_group(node.visitors[i].age)] += 1
-                    matrix[w.get_age_group(node.visitors[i].age),w.get_age_group(node.visitors[j].age)] += 1
-                    matrix[w.get_age_group(node.visitors[j].age),w.get_age_group(node.visitors[i].age)] += 1
-        z+=1
+                    matrix[w.get_age_group(node.visitors[i].age), w.get_age_group(
+                        node.visitors[j].age)] += 1
+                    matrix[w.get_age_group(node.visitors[j].age), w.get_age_group(
+                        node.visitors[i].age)] += 1
+        z += 1
     # print('sali del for')
-    # print(matrix)         
+    # print(matrix)
     return matrix
-    
+
 
 def save_graph_to_file(graph: Graph):
     with open('graph.obj', 'wb') as file:
         pickle.dump(graph, file)
+
 
 def load_graph_from_file() -> Graph:
     with open('graph.obj', 'rb') as file:
         return pickle.load(file)
 
 
-
-def normalize_matrice(graph: Graph,matrix):
+def normalize_matrice(graph: Graph, matrix):
     total_people_by_age_group = [graph.age_dict[i] for i in graph.age_dict]
     for i in range(len(matrix)):
         to_sum = total_people_by_age_group[i]
@@ -162,7 +164,7 @@ def normalize_matrice(graph: Graph,matrix):
 
 def run_simulation(world: World, use_cache=True, save_matrices=True):
     db = SyncEngine(database='contact_simulation')
-    
+
     use_cache = False
     if use_cache and Path('graph.obj').is_file():
         graph = load_graph_from_file()
@@ -179,8 +181,9 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
     n_days = 10
     population = db.find(Person)
     for i in range(n_days):
-        full_matrix = run_step_of_simulation(population,graph,db,full_matrix,world)
-        
+        full_matrix = run_step_of_simulation(
+            population, graph, db, full_matrix, world)
+
         print(i)
     #     full_matrix = run_step_of_simulation(
     #         graph, db, full_matrix, world, population)
@@ -202,8 +205,8 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
     # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
     # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
     # print(i)
-    for i in population:
-        db.delete(i)
+    
+    db.remove(Person)
     print("Done simulating, building matrix")
     save_full_matrix = normalize_matrice(graph, full_matrix)/n_days
     vector_data = vectorize(world.data_source.dict())

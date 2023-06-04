@@ -92,7 +92,7 @@ def create_school(persons,graph:Graph):
 def create_work(persons,graph:Graph):
     z = 0
     for person in persons:
-        if not person.workplace:
+        if not person.work:
             continue
         if not person.workplace in graph.id_nodes:
             graph.id_nodes[person.workplace] = Node(person.workplace,"W")

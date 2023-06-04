@@ -284,6 +284,8 @@ class World:
         #     Person, Person.work == True))
 
         assert self.people_that_work is not None
+        assert len(self.people_that_work) is not None
+        print(len(self.people_that_work))
         people_that_work = self.assign_workplaces_to_people(
             province, prov_id, len(self.people_that_work), self.people_that_work)
 
@@ -312,8 +314,8 @@ class World:
             wp_current_workers = 0
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
-                    # people_that_works[i].workplace = wp
-                    workplaces.append(wp)
+                    people_that_works[i].workplace = wp
+                    # workplaces.append(wp)
                     people_mask[i] = 1
                     workers_count += 1
                     wp_current_workers += 1

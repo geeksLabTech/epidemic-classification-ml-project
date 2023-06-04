@@ -176,8 +176,7 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
     # school_matrix =np.zeros((14,14))
     # work_matrix= np.zeros((14,14))
     # house_matrix=np.zeros((14,14))
-    n_days = 5
-
+    n_days = 10
     population = db.find(Person)
     for i in range(n_days):
         full_matrix = run_step_of_simulation(population,graph,db,full_matrix,world)

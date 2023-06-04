@@ -26,7 +26,7 @@ def run_step_of_simulation(population,graph : Graph,db: SyncEngine, matrix , w :
             print("unknown place, skipping")
             continue
         # print(type(move.visitors[-1]), 'que tu ere')
-    print('termine esto')
+    # print('termine esto')
     full_matrix = get_contact_matrix(graph,population,matrix,w)
 
         
@@ -134,7 +134,7 @@ def get_contact_matrix(graph: Graph, population, matrix, w: World):
                     matrix[w.get_age_group(node.visitors[i].age),w.get_age_group(node.visitors[j].age)] += 1
                     matrix[w.get_age_group(node.visitors[j].age),w.get_age_group(node.visitors[i].age)] += 1
         z+=1
-    print('sali del for')
+    # print('sali del for')
     # print(matrix)         
     return matrix
     

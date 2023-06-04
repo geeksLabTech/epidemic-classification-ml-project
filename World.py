@@ -24,7 +24,7 @@ from models.data_source import DataSource
 # from simulation.workplace import Workplace, WorkplaceSize
 
 
-db = SyncEngine(database='contact_simulation')
+db = SyncEngine(database='contact_simulation', )
 
 
 class World:

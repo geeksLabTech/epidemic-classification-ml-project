@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
-
+import numpy as np
+import json
 
 # @dataclass
 # class Config:
@@ -55,21 +56,28 @@ class Config():
 
 torch.manual_seed(1337)
 
-with open('input.txt', encoding='utf-8') as f:
-    text = f.read()
+with open('dataset.json') as f:
+    data = json.load(f)
 
+X = []
+
+for i in data:
+    flatten_matrix = np.array(i['matrix']).flatten().tolist()
+    X.append(i['vector'] + flatten_matrix)
+    # Y.append(np.array(i['matrix']).flatten())
+print(X,'mirame')
 # Here are all the unique characters that occur in the text 
-chars = sorted(list(set(text)))
-vocab_size = len(chars)
+# chars = sorted(list(set(text)))
+vocab_size = len(data[0]['vector'] + data[0]['matrix'])
 # create a mapping from characters to integers and vice versa
-stoi = {ch:i for i, ch in enumerate(chars)}
-itos = {i:ch for i, ch in enumerate(chars)}
+# stoi = {ch:i for i, ch in enumerate(chars)}
+# itos = {i:ch for i, ch in enumerate(chars)}
 
-encode = lambda s: [stoi[c] for c in s] # convert string to list of integers
-decode = lambda l: ''.join([itos[i] for i in l]) # convert list of integers to string
+# encode = lambda s: [stoi[c] for c in s] # convert string to list of integers
+# decode = lambda l: ''.join([itos[i] for i in l]) # convert list of integers to string
 
 # train and test splits 
-data = torch.tensor(encode(text), dtype=torch.long)
+data = torch.tensor(X, dtype=torch.long)
 n = int(0.9*len(data)) # first 90% will be train, rest val
 train_data, val_data = data[:n], data[n:]
 
@@ -77,7 +85,10 @@ train_data, val_data = data[:n], data[n:]
 def get_batch(split, config):
     # generate a small batch of data of inputs x and targets y
     data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
+    # print(len(data) - config.block_size,'1ro')
+    # print(config.batch_size,'2do')
+
+    ix = torch.randint(len(data) - config.block_size, (config.batch_size))
     x = torch.stack([data[i:i+config.block_size] for i in ix])
     y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
     x, y = x.to(config.device), y.to(config.device)
@@ -262,4 +273,4 @@ for iter in range(config.max_iters):
 
 # Generate from the model
 context = torch.zeros((1,1), dtype=torch.long, device=config.device)
-print(decode(n.generate(context, max_new_tokens=500)[0].tolist()))
+# print(decode(n.generate(context, max_new_tokens=500)[0].tolist()))

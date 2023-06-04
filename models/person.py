@@ -28,6 +28,7 @@ class Person(Model):
     province: str
     interacted: Optional[list]
 
+# def add_noise(self):
 
 def create_parallel(data) -> Person:
     data_source, household, schools, province = data

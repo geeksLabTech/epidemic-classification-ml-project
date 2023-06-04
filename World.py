@@ -62,6 +62,7 @@ class World:
         # self.data_source.vectorize_data()
 
         self.age_groups = np.array(self.data_source.age_groups)
+        self.people_that_work = []
 
         self.mat = {
             "work": np.zeros((len(self.data_source.age_groups),
@@ -99,11 +100,15 @@ class World:
         people = [PersonFactory.create(
             data_source, household, schools, prov_id, True)]
         temp = household['number_of_people'] - 1
-
+        if people[0].work == True:
+            self.people_that_work.append(people[0])
         if temp > 0:
             for i in range(temp):
-                people.append(PersonFactory.create(
-                    data_source, household, schools, prov_id))
+                pers_i = PersonFactory.create(
+                    data_source, household, schools, prov_id)
+                if pers_i.work == True:
+                    self.people_that_work.append(pers_i)
+                people.append(pers_i)
                 self.mat_ages[people[-1].age_group] += 1
 
         db.save_all(people)
@@ -242,7 +247,7 @@ class World:
         people_number_by_household = np.random.choice(a=possible_people_by_household,
                                                       p=inhabitants_distribution,
                                                       size=(total_neighborhoods, total_households_by_neighborhoods))
-        # print([sum(people_number_by_household[i])
+        # total_people = sum(people_number_by_household[i])
         #       for i in range(people_number_by_household.shape[0])])
         # Create household list from people_number_by_household
         households = []
@@ -274,14 +279,14 @@ class World:
 
         start_time = timer()
 
-        people_that_work = list(self.db.find(
-            Person, Person.work == True))
+        # people_that_work = list(self.db.find(
+        #     Person, Person.work == True))
 
-        assert people_that_work is not None
+        assert self.people_that_work is not None
         people_that_work = self.assign_workplaces_to_people(
-            province, prov_id, len(people_that_work), people_that_work)
+            province, prov_id, len(self.people_that_work), self.people_that_work)
 
-        self.db.save_all(people_that_work)
+        self.db.save_all(self.people_that_work)
         self.db.save_all(places)
 
         print('Finished workers in ', timer() - start_time)
@@ -296,7 +301,7 @@ class World:
             a=[0, 1, 2, 3], size=len(people_that_works))
 
         people_mask = np.zeros(len(people_that_works))
-
+        workplaces = []
         places = []
         while workers_count < total_workers:
             size = np.random.choice(a=[0, 1, 2, 3], size=1)[0]
@@ -306,7 +311,8 @@ class World:
             wp_current_workers = 0
             for i in range(len(people_that_works)):
                 if people_mask[i] == 0 and workplace_size_by_people[i] == size:
-                    people_that_works[i].workplace = wp
+                    # people_that_works[i].workplace = wp
+                    workplaces.append(wp)
                     people_mask[i] = 1
                     workers_count += 1
                     wp_current_workers += 1

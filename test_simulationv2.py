@@ -10,6 +10,7 @@ import asyncio
 from simulation.places_graph import build_graph
 from simulation.simulationv2 import run_simulation
 
+
 def main():
 
     # dl = DataLoader()
@@ -21,12 +22,14 @@ def main():
     # w = World('data.json')
 
     print("Generating Population")
-    for i in range(1000):
+    for i in range(100):
         data_source = DataSourceFactory().create_random_population()
+        print("population:", data_source.total_population)
         w = World(data_source=data_source)
         w.generate_population(str(i))
         print("Done!, Simmulating days now...")
         run_simulation(w)
+        print(i)
     # w.run_simulation("pinar", 100)
     # print("Building Matrix")
     # labels = [str(i[0])+"-"+str(i[1]) for i in dl.age_groups]

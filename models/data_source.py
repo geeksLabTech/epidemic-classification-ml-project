@@ -97,7 +97,7 @@ class DataSourceFactory:
                 data.extend(self._make_vector(i))
         elif type(dt) == type({}):
             for key in dt:
-                data.extend(_make_vector(dt[key]))
+                data.extend(self._make_vector(dt[key]))
         else:
             return [dt]
 

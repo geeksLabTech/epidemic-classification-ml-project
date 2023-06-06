@@ -56,8 +56,24 @@ class Config():
 
 torch.manual_seed(1337)
 
-with open('dataset.json') as f:
-    data = json.load(f)
+file_path = 'dataset.json'
+
+# Open the file and load its contents
+with open(file_path, 'r') as json_file:
+    # Read the file content
+    file_content = json_file.read()
+
+    # Split the content by newline to get individual JSON objects
+    json_objects = file_content.split('\n')
+
+data = []
+# Process each JSON object
+for json_object in json_objects:
+    if json_object.strip() == '':
+        continue  # Skip empty lines
+    
+    # Parse the JSON object
+    data.append(json.loads(json_object))
 
 X = []
 
@@ -65,7 +81,7 @@ for i in data:
     flatten_matrix = np.array(i['matrix']).flatten().tolist()
     X.append(i['vector'] + flatten_matrix)
     # Y.append(np.array(i['matrix']).flatten())
-print(X,'mirame')
+print('mirame', X[0:10])
 # Here are all the unique characters that occur in the text 
 # chars = sorted(list(set(text)))
 vocab_size = len(data[0]['vector'] + data[0]['matrix'])

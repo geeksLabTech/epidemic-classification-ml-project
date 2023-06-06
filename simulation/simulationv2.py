@@ -26,8 +26,6 @@ def run_step_of_simulation(population, graph: Graph, db: SyncEngine, matrix, w: 
         except KeyError():
             print("unknown place, skipping")
             continue
-        # print(type(move.visitors[-1]), 'que tu ere')
-    # print('termine esto')
     full_matrix = get_contact_matrix(graph, population, matrix, w)
 
     return full_matrix
@@ -184,28 +182,7 @@ def run_simulation(world: World, use_cache=True, save_matrices=True):
         full_matrix = run_step_of_simulation(
             population, graph, db, full_matrix, world)
 
-        print(i)
-    #     full_matrix = run_step_of_simulation(
-    #         graph, db, full_matrix, world, population)
-    # if save_matrices and (i%2 == 0 or i == 0):
-    #     save_full_matrix = normalize_matrice(graph,full_matrix)
-    #     save_full_in_db = ContactMatrix(category='full_matrix',iteration=i,data= save_full_matrix.tolist(),simulation_type='graph')
-    #     db.save(save_full_in_db)``
-    # save_school_matrix= normalize_matrice(graph,school_matrix)
-    # save_school_in_db = ContactMatrix(category='school_matrix',iteration=i,data= save_school_matrix.tolist(),simulation_type='graph')
-    # db.save(save_school_in_db)
-    # save_work_matrix=normalize_matrice(graph,work_matrix)
-    # save_work_in_db = ContactMatrix(category='work_matrix',iteration=i,data= save_work_matrix.tolist(),simulation_type='graph')
-    # db.save(save_work_in_db)
-    # save_house_matrix = normalize_matrice(graph,house_matrix)
-    # save_full_in_db = ContactMatrix(category='house_matrix',iteration=i,data= save_house_matrix.tolist(),simulation_type='graph')
-
-    # pd.DataFrame(full_matrix).to_csv('full_matrix.csv', mode='a', header=False)
-    # pd.DataFrame(full_matrix).to_csv('school_matrix.csv', mode='a', header=False)
-    # pd.DataFrame(full_matrix).to_csv('work_matrix.csv', mode='a', header=False)
-    # pd.DataFrame(full_matrix).to_csv('house_matrix.csv', mode='a', header=False)
-    # print(i)
-    
+        print(i) 
     db.remove(Person)
     print("Done simulating, building matrix")
     save_full_matrix = normalize_matrice(graph, full_matrix)/n_days

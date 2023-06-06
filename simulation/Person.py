@@ -9,7 +9,7 @@
 # def get_random_element_from_collection():
 #     # Replace with your MongoDB connection string
 #     client = MongoClient("mongodb://localhost:27017")
-#     db = client["contact_simulation"]  # Replace with your database name
+#     db = client["contact_simulation_2n"]  # Replace with your database name
 #     # Replace with your collection name
 #     collection = db["person"]
 

@@ -24,7 +24,7 @@ from models.data_source import DataSource
 # from simulation.workplace import Workplace, WorkplaceSize
 
 
-db = SyncEngine(database='contact_simulation', )
+db = SyncEngine(database='contact_simulation_2n', )
 
 
 class World:
@@ -78,7 +78,7 @@ class World:
         self.mat_ages = np.ones(len(self.data_source.age_groups))
 
         self.total_population = 0
-        self.db = SyncEngine(database='contact_simulation')
+        self.db = SyncEngine(database='contact_simulation_2n')
 
         self.politics_deployed = {
             'household': 1,

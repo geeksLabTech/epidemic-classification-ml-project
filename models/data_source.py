@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import numpy as np
 from uuid import uuid4
 from sklearn.feature_extraction import DictVectorizer
+import json
 
 
 class DataSource(BaseModel):

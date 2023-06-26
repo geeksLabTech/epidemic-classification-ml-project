@@ -31,7 +31,7 @@ class Graph:
         self.nodes[node2].append(node1)
 
 def build_graph(world : World):
-    db = SyncEngine(database='contact_simulation')
+    db = SyncEngine(database='contact_simulation_2n')
     graph = Graph() 
     persons = list(db.find(Person))
     create_neighborhood( persons,graph,world)

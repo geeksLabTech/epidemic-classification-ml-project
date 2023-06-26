@@ -103,7 +103,7 @@ def get_batch(split, config):
     data = train_data if split == 'train' else val_data
     # print(len(data) - config.block_size,'1ro')
     # print(config.batch_size,'2do')
-
+    print(len(data), ' a ver cuantos hay')
     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
     x = torch.stack([data[i:i+config.block_size] for i in ix])
     y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
@@ -221,7 +221,9 @@ class Transformer(nn.Module):
         self.config = config
 
     def forward(self, idx, targets=None):
-        B, T,C = idx.shape
+        print(idx.shape, ' look')
+        B, T, C = idx.shape
+
 
         # idx and targets are both (B, T) tensor of integers
         tok_emb = self.token_embedding_table(idx) # (B, T, C)

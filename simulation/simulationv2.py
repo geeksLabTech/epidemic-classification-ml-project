@@ -161,7 +161,7 @@ def normalize_matrice(graph: Graph, matrix):
 
 
 def run_simulation(world: World, use_cache=True, save_matrices=True):
-    db = SyncEngine(database='contact_simulation')
+    db = SyncEngine(database='contact_simulation_2n')
 
     use_cache = False
     if use_cache and Path('graph.obj').is_file():

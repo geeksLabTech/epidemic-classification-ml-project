@@ -224,6 +224,7 @@ class Transformer(nn.Module):
         print(idx.shape, ' look')
         B, T, C = idx.shape
 
+
         # idx and targets are both (B, T) tensor of integers
         tok_emb = self.token_embedding_table(idx) # (B, T, C)
         pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device)) # (T, C)

@@ -45,30 +45,21 @@ def create_neighborhood(data , graph: Graph,world:World):
     for person in data:
         if not world.get_age_group(person.age) in graph.age_dict:
             graph.age_dict[world.get_age_group(person.age)] = 1
-        else:
-            # print('else')
+        else:  
             graph.age_dict[world.get_age_group(person.age)] +=1
-            # print(graph.age_dict[world.get_age_group(person.age)], 'esta creciendo')
-        # print(type(person), 'xq repiiiin')
+           
         if not person.household in graph.id_nodes:
             house_node = Node(person.household,"H",person.neighborhood)
-            # print(len(house_node.visitors),'antes')
             house_node.visitors.append(person)
-            # print(len(house_node.visitors),'a ver aki')
             graph.id_nodes[person.household] = house_node
             graph.add_node(graph.id_nodes[person.household])
         else:
             graph.id_nodes[person.household].visitors.append(person)
-        # print( type(graph.id_nodes[person.household].visitors[-1]),'esta pin que ')
         if not person.neighborhood in graph.id_nodes:
-            # print('entro')
-            # print(len(graph.nodes[person.neighborhood]), 'antte')
             neighborhood_node = Node(person.neighborhood,'N')
             graph.id_nodes[person.neighborhood] = neighborhood_node
             graph.add_node(graph.id_nodes[person.neighborhood])
         graph.add_edge(graph.id_nodes[person.household],graph.id_nodes[person.neighborhood])
-        # print(len(graph.nodes[graph.id_nodes[person.neighborhood]]) > 1 == True, ' deja ver')
-        # graph.add_edge(graph.id_nodes[person.neighborhood],graph.id_nodes[person.household])
         
 def add_edge_neighborhood(graph:Graph):
     for node1 in graph.id_nodes:
@@ -84,22 +75,17 @@ def create_school(persons,graph:Graph):
         if not person.school in graph.id_nodes:
             graph.id_nodes[person.school] = Node(person.school,"S")
             graph.add_node(graph.id_nodes[person.school])
-        # print(person.school, person.household, ' seraaaaa')
         graph.add_edge(graph.id_nodes[person.household],graph.id_nodes[person.school])
         
-            
-
 def create_work(persons,graph:Graph):
-    z = 0
     for person in persons:
         if not person.work:
             continue
         if not person.workplace in graph.id_nodes:
             graph.id_nodes[person.workplace] = Node(person.workplace,"W")
             graph.add_node(graph.id_nodes[person.workplace])
-            z+=1
         graph.add_edge(graph.id_nodes[person.household],graph.id_nodes[person.workplace])
-    print(z, ' cuantos tengo')
+
 
 def create_random_edges(graph:Graph):
     for i in range(1000):

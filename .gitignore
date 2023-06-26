@@ -7,6 +7,10 @@ population_data/
 # C extensions
 *.so
 
+# autokeras
+ml/auto_model
+ml/structured_data_regressor
+
 # Distribution / packaging
 .Python
 build/
